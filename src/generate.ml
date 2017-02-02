@@ -11,13 +11,11 @@ let generate_constant fmt cst =
   | Const_float f -> Format.fprintf fmt "%s" f 
   | _ -> raise (Not_implemented_yet "generate_constant")
 
-(**  tuple  ***********************************************************************************************************************)
- 
 let rec generate_tuple fmt tpl =
   let arr_of_tpl = Array.of_list tpl in
         let taille = Array.length arr_of_tpl - 1 in
               for i = 0 to taille  do 
-                    if i == taille then begin
+                    if i = taille then begin
                         generate_expression fmt (Array.get arr_of_tpl taille).exp_desc  
                     end  
                     else begin
@@ -25,10 +23,17 @@ let rec generate_tuple fmt tpl =
                     end
               done
       
+and generate_array fmt arr =
+      match arr with
+        |[] -> Format.fprintf fmt " "
+        |x::[] -> generate_expression fmt x.exp_desc
+        |x::rest -> generate_expression fmt x.exp_desc ; Format.fprintf fmt " , " ; generate_array fmt rest
+
 and generate_expression fmt exp_desc =
   match exp_desc with
   | Texp_constant cst -> generate_constant fmt cst
   | Texp_tuple tpl -> generate_tuple fmt tpl
+  | Texp_array arr -> generate_array fmt arr
   | _ -> raise (Not_implemented_yet "generate_expression")
             
 let generate_value_binding fmt value_binding =

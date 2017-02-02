@@ -1,7 +1,0 @@
-PKG compiler-libs
-PKG compiler-libs.common
-
-S src
-S src/**
-
-B _build/*
