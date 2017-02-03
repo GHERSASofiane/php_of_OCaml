@@ -1,7 +1,7 @@
 open Cmt_format
 
 let cmt_file = ref ""
-let output_file = ref "../PHP_generate/Result_Array.php"
+let output_file = ref "../PHP_generate/php_of_ocaml_Test.php"
 
 let use = "Usage: php_of_ocaml <cmt_file>"
                    
