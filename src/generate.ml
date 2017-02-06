@@ -13,114 +13,127 @@ let generate_constant fmt cst =
   | Const_float f -> Format.fprintf fmt "%s" f 
   | _ -> raise (Not_implemented_yet "generate_constant_error")
   
-(* Generate Array   ******************************************************************************************************* *)
-let generate_arg fmt pattern_desc =
+ (* Generate Function  ******************************************************************************************************* *)
+let generation_of_parameter fmt pattern_desc = (* generate parameter *)
   match pattern_desc with
   | Tpat_var (i,loc) ->  Format.fprintf fmt " %s" loc.txt
-  | Tpat_constant cst ->  Format.fprintf fmt " Constant"
-  |_ ->  Format.fprintf fmt " k "
+  | Tpat_construct (a,b,c) -> Format.fprintf fmt ""
 
- let rec generate_a fmt arr =
-      match arr with
+  | Tpat_any -> Format.fprintf fmt "generation_of_parameter_any \n"
+  | Tpat_alias (a,b,c) -> Format.fprintf fmt " generation_of_parameter_alias \n"
+  | Tpat_constant a -> Format.fprintf fmt " generation_of_parameter_canst \n"
+  | Tpat_tuple a -> Format.fprintf fmt " generation_of_parameter_tuple \n"
+  | Tpat_variant (a,b,c) -> Format.fprintf fmt " generation_of_parameter_variant \n"
+  | Tpat_record (a,b) -> Format.fprintf fmt "  generation_of_parameter_record\n"
+  | Tpat_array a -> Format.fprintf fmt " generation_of_parameter_array \n"
+  | Tpat_or (a,b,c) -> Format.fprintf fmt " generation_of_parameter_or "
+  | Tpat_lazy a -> Format.fprintf fmt " generation_of_parameter_lazy \n"
+  |_ ->  Format.fprintf fmt "ERROR_generation_of_parameter"
+
+
+let rec generate_args fmt case =
+   match case with
         |[] ->  Format.fprintf fmt ""
-        |x::[] -> generate_arg fmt x.c_lhs.pat_desc
-        |x::rest -> generate_arg fmt x.c_lhs.pat_desc ; Format.fprintf fmt "," ; generate_a fmt rest
-       
-let rec generate_array fmt arr =
-      match arr with
-        |[] -> Format.fprintf fmt " "
-        |x::[] -> generate_expression fmt x.exp_desc 
-        |x::rest -> generate_expression fmt x.exp_desc  ; Format.fprintf fmt " , " ; generate_array fmt rest
-   
+        |arg::[] ->  if arg.c_rhs.exp_loc.loc_ghost then begin
+                      generation_of_parameter fmt arg.c_lhs.pat_desc ;
+                      Format.fprintf fmt ",";
+                      match arg.c_rhs.exp_desc with
+                        | Texp_function (label,case,partial) ->  Format.fprintf fmt "%a"  generate_args case 
+                        | _ -> Format.fprintf fmt "ERROR_generate_args__match"
+                       
+                      end 
+                      else begin
+                        generation_of_parameter fmt arg.c_lhs.pat_desc ; 
+                        Format.fprintf fmt " ){\n  " ; generate_expression fmt arg.c_rhs.exp_desc ; 
+                        Format.fprintf fmt "\n }\n"
+                      end
+        | _ -> Format.fprintf fmt "ERROR_generate_args"  
+        
+(* Generate Array and tuple  ******************************************************************************************************* *)
+and  generate_array_and_tuple fmt tpl =
+  let arr_of_tpl = Array.of_list tpl in
+        let taille = Array.length arr_of_tpl - 1 in
+              for i = 0 to taille  do 
+                    if i == taille then begin
+                        generate_expression fmt (Array.get arr_of_tpl taille).exp_desc  
+                    end  
+                    else begin
+                       generate_expression fmt (Array.get arr_of_tpl i).exp_desc ; Format.fprintf fmt " , " 
+                    end
+              done
+
 (* Generate Expression   ******************************************************************************************************* *)
  
 and generate_expression fmt exp_desc =
   match exp_desc with
   | Texp_constant cst ->  generate_constant fmt cst 
-  | Texp_array ary -> Format.fprintf fmt "array ( " ; generate_array fmt ary ; Format.fprintf fmt ")"
-  | Texp_tuple tup -> Format.fprintf fmt "array ( " ; generate_array fmt tup ; Format.fprintf fmt " ) "
-  | Texp_ident (a,b,d)    -> Format.fprintf fmt  "generate_expression--generate_identt"
-  | Texp_let (a,b,d) -> Format.fprintf fmt  "generate_expression--generate_let"
-  
-  | Texp_function (a,b,c) ->  Format.fprintf fmt "(%a ){body}"  generate_a b 
-  
-  | Texp_apply (a,b) -> Format.fprintf fmt  "generate_expression--generate_apply"
+  | Texp_array ary -> Format.fprintf fmt "array ( " ; generate_array_and_tuple fmt ary ; Format.fprintf fmt ")"
+  | Texp_tuple tup -> Format.fprintf fmt "array ( " ; generate_array_and_tuple fmt tup ; Format.fprintf fmt " ) "
+  | Texp_function (label,case,partial) ->  Format.fprintf fmt " ( "; generate_args fmt case
+  | Texp_ifthenelse (cond,trait,alt) -> begin
+                                               Format.fprintf fmt   "if ( " ;generat_if_then_else fmt cond ; 
+                                               Format.fprintf fmt   " ) {\n " ;generat_if_then_else fmt trait ; 
+                                               Format.fprintf fmt   "\n }" ; 
+                                                match alt with 
+                                               | Some z-> Format.fprintf fmt "else{\n"; generat_if_then_else fmt z;Format.fprintf fmt   " \n }\n"
+                                               | None -> Format.fprintf fmt   "\n";
+
+                                               
+                                        end
+
+  | Texp_apply (exp,l_exp) -> Format.fprintf fmt "  generate_expression--generate_apply "
+  | Texp_ident (path,long,typ)    -> Format.fprintf fmt " generate_expression--generate_operateur " 
+  | Texp_let (a,b,d) -> Format.fprintf fmt  "generate_expression--generate_let\n"
   | Texp_match (a,b,d,f) -> Format.fprintf fmt   "generate_expression--generate_match"
   | Texp_try (a,b) -> Format.fprintf fmt  "generate_expression--generate_try"
   | Texp_construct (a,b,d) -> Format.fprintf fmt   "generate_expression--generate_construnct"
   | Texp_variant (d,f) -> Format.fprintf fmt   "generate_expression--generate_variant"
   | Texp_field (a,b,d) -> Format.fprintf fmt   "generate_expression--generate_field"
   | Texp_setfield (a,b,d,f) -> Format.fprintf fmt  "generate_expression--generate_setfield"
-  | Texp_ifthenelse (a,b,d) -> Format.fprintf fmt   "generate_expression--generate_if then else"
-  | Texp_sequence (a,b) -> Format.fprintf fmt   "generate_expression--generate_seq"
-  | Texp_while (a,b) -> Format.fprintf fmt   "generate_expression--generate_whille"
-  | Texp_for (a,b,d,f,m,l) -> Format.fprintf fmt   "generate_expression--generate_fouuuurrr"
+  
+  | Texp_sequence (a,b) -> Format.fprintf fmt   "generate_expression--generate_sequence"
+  | Texp_while (a,b) -> Format.fprintf fmt   "generate_expression--generate_while"
+  | Texp_for (a,b,d,f,m,l) -> Format.fprintf fmt   "generate_expression--generate_for"
   | Texp_send (a,b,d) -> Format.fprintf fmt   "generate_expression--generate_send"
   | Texp_new (a,b,d) -> Format.fprintf fmt   "generate_expression--generate_new"
   | Texp_instvar (a,b,d) -> Format.fprintf fmt   "generate_expression--generate_instvar"
-  | Texp_setinstvar (a,b,d,f) -> Format.fprintf fmt   "generate_expression--generate_set inv"
-  | Texp_letmodule (a,b,d,f) -> Format.fprintf fmt   "generate_expression--generate_letmod"
+  | Texp_setinstvar (a,b,d,f) -> Format.fprintf fmt   "generate_expression--generate_setinstvar"
+  | Texp_letmodule (a,b,d,f) -> Format.fprintf fmt   "generate_expression--generate_letmodule"
   | Texp_assert q -> Format.fprintf fmt   "generate_expression--generate_assert"
-  | Texp_lazy q -> Format.fprintf fmt   "generate_expression--generate_laz"
+  | Texp_lazy q -> Format.fprintf fmt   "generate_expression--generate_lazy"
   | Texp_object (a,b)  -> Format.fprintf fmt  "generate_expression--generate_object"
   | Texp_pack h -> Format.fprintf fmt   "generate_expression--generate_pack"
+
   | _ -> raise (Not_implemented_yet "generate_expression")
 
-(* Generate Dolar  ******************************************************************************************************* *)
 
-  and generate_dolar fmt exp_desc =
-  match exp_desc with
-  | Texp_constant cst ->  Format.fprintf fmt "$" 
-  | Texp_array ary -> Format.fprintf fmt "$" 
-  | Texp_tuple tup -> Format.fprintf fmt "$" 
-  | Texp_ident (a,b,d)    -> Format.fprintf fmt "" 
-  | Texp_let (a,b,d) -> Format.fprintf fmt ""
-  
-  | Texp_function (a,b,d) -> Format.fprintf fmt "function "
-  
-  | Texp_apply (a,b) -> Format.fprintf fmt ""
-  | Texp_match (a,b,d,f) -> Format.fprintf fmt ""
-  | Texp_try (a,b) -> Format.fprintf fmt ""
-  | Texp_construct (a,b,d) -> Format.fprintf fmt ""
-  | Texp_variant (d,f) -> Format.fprintf fmt ""
-  | Texp_field (a,b,d) -> Format.fprintf fmt ""
+                               
 
-  (* | Texp_setfield (a,b,d,f) -> Format.fprintf fmt  "generate_expression--generate_setfield"
-  | Texp_ifthenelse (a,b,d) -> Format.fprintf fmt   "generate_expression--generate_if then else"
-  | Texp_sequence (a,b) -> Format.fprintf fmt   "generate_expression--generate_seq"
-  | Texp_while (a,b) -> Format.fprintf fmt   "generate_expression--generate_whille"
-  | Texp_for (a,b,d,f,m,l) -> Format.fprintf fmt   "generate_expression--generate_fouuuurrr"
-  | Texp_send (a,b,d) -> Format.fprintf fmt   "generate_expression--generate_send"
-  | Texp_new (a,b,d) -> Format.fprintf fmt   "generate_expression--generate_new"
-  | Texp_instvar (a,b,d) -> Format.fprintf fmt   "generate_expression--generate_instvar"
-  | Texp_setinstvar (a,b,d,f) -> Format.fprintf fmt   "generate_expression--generate_set inv"
-  | Texp_letmodule (a,b,d,f) -> Format.fprintf fmt   "generate_expression--generate_letmod"
-  | Texp_assert q -> Format.fprintf fmt   "generate_expression--generate_assert"
-  | Texp_lazy q -> Format.fprintf fmt   "generate_expression--generate_laz"
-  | Texp_object (a,b)  -> Format.fprintf fmt  "generate_expression--generate_object"
-  | Texp_pack h -> Format.fprintf fmt   "generate_expression--generate_pack"
-   *)
-  | _ -> raise (Not_implemented_yet "generate_expression")
-     
+and generat_if_then_else fmt x = 
+    generate_expression fmt x.exp_desc
+
 (* Generate Value Binding    *************************************************************************************************** *)
  
 let generate_value_binding fmt value_binding =
   let {vb_pat; vb_expr; vb_attributes; vb_loc} = value_binding in
   
     match vb_pat.pat_desc with
-  | Tpat_var (ident, loc) -> 
-      Format.fprintf fmt "%a%s = %a;\n" generate_dolar vb_expr.exp_desc loc.txt  generate_expression vb_expr.exp_desc                                                   
-  | Tpat_any -> Format.fprintf fmt " any \n"
-  | Tpat_alias (a,b,c) -> Format.fprintf fmt " alias \n"
-  | Tpat_constant a -> Format.fprintf fmt " canst \n"
-  | Tpat_tuple a -> Format.fprintf fmt " tuple \n"
-  | Tpat_construct (a,b,c) -> Format.fprintf fmt " construct \n"
-  | Tpat_variant (a,b,c) -> Format.fprintf fmt " variant \n"
-  | Tpat_record (a,b) -> Format.fprintf fmt "  record\n"
-  | Tpat_array a -> Format.fprintf fmt " array \n"
-  | Tpat_or (a,b,c) -> Format.fprintf fmt " or "
-  | Tpat_lazy a -> Format.fprintf fmt " lazy \n"
-  | _ ->  Format.fprintf fmt " errroooorr \n"
+  | Tpat_var (ident, loc) -> begin
+                                match vb_expr.exp_desc with
+                                | Texp_function (label,case,partial) ->  Format.fprintf fmt "function %s%a\n"  loc.txt  generate_expression vb_expr.exp_desc
+                                | _ ->  Format.fprintf fmt "$%s = %a;\n"  loc.txt  generate_expression vb_expr.exp_desc
+                             end
+  | Tpat_any -> Format.fprintf fmt "generate_value_binding_any \n"
+  | Tpat_alias (a,b,c) -> Format.fprintf fmt " generate_value_binding_alias \n"
+  | Tpat_constant a -> Format.fprintf fmt " generate_value_binding_canst \n"
+  | Tpat_tuple a -> Format.fprintf fmt " generate_value_binding_tuple \n"
+  | Tpat_construct (a,b,c) -> Format.fprintf fmt " generate_value_binding_construct \n"
+  | Tpat_variant (a,b,c) -> Format.fprintf fmt " generate_value_binding_variant \n"
+  | Tpat_record (a,b) -> Format.fprintf fmt "  generate_value_binding_record\n"
+  | Tpat_array a -> Format.fprintf fmt " generate_value_binding_array \n"
+  | Tpat_or (a,b,c) -> Format.fprintf fmt " generate_value_binding_or "
+  | Tpat_lazy a -> Format.fprintf fmt " generate_value_binding_lazy \n"
+  | _ ->  Format.fprintf fmt " generate_value_binding \n"
       
 (* Generate Structure Item   *************************************************************************************************** *)
       
@@ -128,19 +141,19 @@ let generate_structure_item fmt item =
   let { str_desc; _ } = item in
   match str_desc with
   | Tstr_value (rec_flag, val_binds) -> List.iter (generate_value_binding fmt) val_binds
-  | Tstr_eval (a,b) ->  Format.fprintf fmt " eval  \n"
-  | Tstr_primitive a -> Format.fprintf fmt " primitiv  \n"
-  | Tstr_type e -> Format.fprintf fmt " type  \n"
-  | Tstr_typext a -> Format.fprintf fmt " typex  \n"
-  | Tstr_exception a -> Format.fprintf fmt " exeption  \n"
-  | Tstr_module a -> Format.fprintf fmt " module  \n"
-  | Tstr_recmodule a-> Format.fprintf fmt " recmodule  \n"
-  | Tstr_modtype a -> Format.fprintf fmt " modtype  \n"
-  | Tstr_open a-> Format.fprintf fmt " open  \n"
-  | Tstr_class a -> Format.fprintf fmt " class  \n"
-  | Tstr_class_type e -> Format.fprintf fmt " class_type  \n"
-  | Tstr_include a -> Format.fprintf fmt " include  \n"
-  | Tstr_attribute a -> Format.fprintf fmt " attribut  \n" 
+  | Tstr_eval (exp,att) ->  generate_expression fmt exp.exp_desc
+  | Tstr_primitive a -> Format.fprintf fmt " generate_structure_item_primitiv  \n"
+  | Tstr_type e -> Format.fprintf fmt " generate_structure_item_type  \n"
+  | Tstr_typext a -> Format.fprintf fmt " generate_structure_item_typex  \n"
+  | Tstr_exception a -> Format.fprintf fmt " generate_structure_item_exeption  \n"
+  | Tstr_module a -> Format.fprintf fmt " generate_structure_item_module  \n"
+  | Tstr_recmodule a-> Format.fprintf fmt " generate_structure_item_recmodule  \n"
+  | Tstr_modtype a -> Format.fprintf fmt " generate_structure_item_modtype  \n"
+  | Tstr_open a-> Format.fprintf fmt " generate_structure_item_open  \n"
+  | Tstr_class a -> Format.fprintf fmt " generate_structure_item_class  \n"
+  | Tstr_class_type e -> Format.fprintf fmt " generate_structure_item_class_type  \n"
+  | Tstr_include a -> Format.fprintf fmt " generate_structure_item_include  \n"
+  | Tstr_attribute a -> Format.fprintf fmt " generate_structure_item_attribut  \n" 
   | _ -> raise (Not_implemented_yet "generate_structure_item")
       
 (* Generate From Structure  *************************************************************************************************** *)
