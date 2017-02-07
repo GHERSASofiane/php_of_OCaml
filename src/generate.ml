@@ -16,7 +16,7 @@ let generate_constant fmt cst =
  (* Generate Function  ******************************************************************************************************* *)
 let generation_of_parameter fmt pattern_desc = (* generate parameter *)
   match pattern_desc with
-  | Tpat_var (i,loc) ->  Format.fprintf fmt " %s" loc.txt
+  | Tpat_var (i,loc) ->  Format.fprintf fmt " $%s" loc.txt
   | Tpat_construct (a,b,c) -> Format.fprintf fmt ""
 
   | Tpat_any -> Format.fprintf fmt "generation_of_parameter_any \n"
@@ -81,8 +81,19 @@ and generate_expression fmt exp_desc =
                                                
                                         end
 
-  | Texp_apply (exp,l_exp) -> Format.fprintf fmt "  generate_expression--generate_apply "
-  | Texp_ident (path,long,typ)    -> Format.fprintf fmt " generate_expression--generate_operateur " 
+  | Texp_apply (exp,l_exp) ->   begin 
+                                generate_param fmt (List.nth l_exp 0);
+                                generate_apply_opp fmt exp;
+                                if (List.length l_exp > 1) then generate_param fmt (List.nth l_exp 1);
+                                end
+  | Texp_ident (path,long,typ)    -> begin
+                                      match path with
+                                     | Pident ident_t -> Format.fprintf fmt " $%s " ident_t.name
+                                     | Pdot (t,str,i) -> Format.fprintf fmt " %s " str
+                                     | Papply (t_1,t_2) -> Format.fprintf fmt " == Papply (regarde dans /typing/path.ml)"
+                                     | _-> Format.fprintf fmt "error_generate___Texp_ident \n"
+                                     end
+
   | Texp_let (a,b,d) -> Format.fprintf fmt  "generate_expression--generate_let\n"
   | Texp_match (a,b,d,f) -> Format.fprintf fmt   "generate_expression--generate_match"
   | Texp_try (a,b) -> Format.fprintf fmt  "generate_expression--generate_try"
@@ -106,12 +117,23 @@ and generate_expression fmt exp_desc =
 
   | _ -> raise (Not_implemented_yet "generate_expression")
 
-
                                
-
+(* Pour appler la fonction generate_expression pour éviter la récursivité *)
 and generat_if_then_else fmt x = 
     generate_expression fmt x.exp_desc
 
+(* généré l'operation avec ces parametre  *)
+ and generate_apply_opp fmt exp1= 
+           generate_expression fmt exp1.exp_desc 
+
+and generate_param fmt param_op =
+  let (lab,exp,op) = param_op in
+      match exp with
+      | Some b -> generate_expression fmt b.exp_desc
+      | None -> Format.fprintf fmt ""
+   
+ 
+  
 (* Generate Value Binding    *************************************************************************************************** *)
  
 let generate_value_binding fmt value_binding =

@@ -30,12 +30,14 @@ if true then 1 else 0;;
 
 let func_sans_args () = 5+2
 let func_avec_un_arg x = x = 2
-let func_avec_deux_args x y = x * y
+let func_avec_deux_args x y = x * y;;
 let average a b =  (a +. b) /. 2.0
 let square x = x * x
 let valeur_absolue x = if x >= 0 then x else - x
 let max a b =
-  if a > b then a else b
+  if a > b then a else b;;
+
+if(3>4) then 1+2-4 else 0
   
 let rec fact x =
   if x <= 1 then 1 else x * fact (x - 1)
