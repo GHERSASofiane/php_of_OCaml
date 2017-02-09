@@ -127,11 +127,12 @@ and generat_if_then_else fmt x =
            generate_expression fmt exp1.exp_desc 
 
 and generate_param fmt param_op =
-  let (lab,exp,op) = param_op in
-      match exp with
-      | Some b -> generate_expression fmt b.exp_desc
-      | None -> Format.fprintf fmt ""
-   
+  (* let (lab,exp,op) = param_op in *)
+  (* let (lab,op) = param_op in *)
+  (*     match exp with *)
+  (*     | Some b -> generate_expression fmt b.exp_desc *)
+  (*     | None -> Format.fprintf fmt "" *)
+  Format.fprintf fmt "" 
  
   
 (* Generate Value Binding    *************************************************************************************************** *)
@@ -165,7 +166,7 @@ let generate_structure_item fmt item =
   | Tstr_value (rec_flag, val_binds) -> List.iter (generate_value_binding fmt) val_binds
   | Tstr_eval (exp,att) ->  generate_expression fmt exp.exp_desc
   | Tstr_primitive a -> Format.fprintf fmt " generate_structure_item_primitiv  \n"
-  | Tstr_type e -> Format.fprintf fmt " generate_structure_item_type  \n"
+  | Tstr_type (e,_) -> Format.fprintf fmt " generate_structure_item_type  \n"
   | Tstr_typext a -> Format.fprintf fmt " generate_structure_item_typex  \n"
   | Tstr_exception a -> Format.fprintf fmt " generate_structure_item_exeption  \n"
   | Tstr_module a -> Format.fprintf fmt " generate_structure_item_module  \n"
