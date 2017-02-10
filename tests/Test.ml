@@ -30,6 +30,10 @@ if true then 1 else 0;;
 
 let func_sans_args () = 5+2
 let func_avec_un_arg x = x = 2
+let func_avec_un_arg x = x < 2
+let func_avec_un_arg x = x > 2
+let func_avec_un_arg x = x <= 2
+let func_avec_un_arg x = x >= 2
 let func_avec_deux_args x y = x * y;;
 let average a b =  (a +. b) /. 2.0
 let square x = x * x

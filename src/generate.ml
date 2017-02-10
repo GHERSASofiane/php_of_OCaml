@@ -2,6 +2,9 @@ open Typedtree
 
 exception Not_implemented_yet of string
 
+(* initialize a list to store function names *)
+let l = ref []
+
 (* Generate Constant   ******************************************************************************************************* *)
 
 let generate_constant fmt cst =
@@ -44,11 +47,16 @@ let rec generate_args fmt case =
                       end 
                       else begin
                         generation_of_parameter fmt arg.c_lhs.pat_desc ; 
-                        Format.fprintf fmt " ){\n  " ; generate_expression fmt arg.c_rhs.exp_desc ; 
-                        Format.fprintf fmt "\n }\n"
+                        Format.fprintf fmt " ){\n  " ; 
+(***************************  le cas ou on mets ou pas le return à l'intérieur d'une fonction  *)
+                          match arg.c_rhs.exp_desc with
+                          | Texp_apply (exp,l_exp) -> Format.fprintf fmt "return "; generate_expression fmt arg.c_rhs.exp_desc; Format.fprintf fmt " ;\n }\n"; 
+                          | _ -> generate_expression fmt arg.c_rhs.exp_desc;Format.fprintf fmt "\n }\n";
+                        
                       end
         | _ -> Format.fprintf fmt "ERROR_generate_args"  
-        
+ 
+       
 (* Generate Array and tuple  ******************************************************************************************************* *)
 and  generate_array_and_tuple fmt tpl =
   let arr_of_tpl = Array.of_list tpl in
@@ -63,8 +71,9 @@ and  generate_array_and_tuple fmt tpl =
               done
 
 (* Generate Expression   ******************************************************************************************************* *)
- 
-and generate_expression fmt exp_desc =
+
+   
+and generate_expression fmt exp_desc = 
   match exp_desc with
   | Texp_constant cst ->  generate_constant fmt cst 
   | Texp_array ary -> Format.fprintf fmt "array ( " ; generate_array_and_tuple fmt ary ; Format.fprintf fmt ")"
@@ -72,32 +81,48 @@ and generate_expression fmt exp_desc =
   | Texp_function (label,case,partial) ->  Format.fprintf fmt " ( "; generate_args fmt case
   | Texp_ifthenelse (cond,trait,alt) -> begin
                                                Format.fprintf fmt   "if ( " ;generat_if_then_else fmt cond ; 
-                                               Format.fprintf fmt   " ) {\n " ;generat_if_then_else fmt trait ; 
-                                               Format.fprintf fmt   "\n }" ; 
+                                               Format.fprintf fmt   " ) {\n return " ;generat_if_then_else fmt trait ; 
+                                               Format.fprintf fmt   ";\n }" ; 
                                                 match alt with 
-                                               | Some z-> Format.fprintf fmt "else{\n"; generat_if_then_else fmt z;Format.fprintf fmt   " \n }\n"
+                                               | Some z-> Format.fprintf fmt "else{\nreturn "; generat_if_then_else fmt z;Format.fprintf fmt   " ;\n }\n"
                                                | None -> Format.fprintf fmt   "\n";
 
                                                
                                         end
 
-  | Texp_apply (exp,l_exp) ->   begin 
-                                generate_param fmt (List.nth l_exp 0);
-                                generate_apply_opp fmt exp;
-                                if (List.length l_exp > 1) then generate_param fmt (List.nth l_exp 1);
-                                end
-  | Texp_ident (path,long,typ)    -> begin
-                                      match path with
-                                     | Pident ident_t -> Format.fprintf fmt " $%s " ident_t.name
-                                     | Pdot (t,str,i) -> Format.fprintf fmt " %s " str
-                                     | Papply (t_1,t_2) -> Format.fprintf fmt " == Papply (regarde dans /typing/path.ml)"
-                                     | _-> Format.fprintf fmt "error_generate___Texp_ident \n"
-                                     end
+  | Texp_apply (exp,l_exp) ->  
+                                      if (List.length l_exp) = 1 then 
+                                      begin
+                                        
+                                        generate_apply_opp fmt exp;
+                                        Format.fprintf fmt " ( ";
+                                        generate_param fmt (List.nth l_exp 0);
+                                        Format.fprintf fmt " ) ";
+                                      end
+                                      
+                                      else begin
+                                        generate_param fmt (List.nth l_exp 0);
+                                        generate_apply_opp fmt exp;
+                                        if (List.length l_exp > 1) then generate_param fmt (List.nth l_exp 1);
+                                        end
+                                
+  | Texp_ident (path,long,typ)    -> generate_path fmt path
+
+  | Texp_construct (long_id,constructor_description,exp_list) -> 
+                      begin
+                           match constructor_description.cstr_res.desc with
+                                  Tvar x-> Format.fprintf fmt " Tvar \n"
+                                  | Tarrow (lb,typ_exp1,typ_exp2,c) ->Format.fprintf fmt " Tarrow \n"
+                                  | Ttuple (typ_exp_lst) ->Format.fprintf fmt " Ttuple \n"
+                                  | Tconstr (path,typ_exp_lst,abrv_mem)-> generate_path fmt path (* call the generate_path function *)
+                                  | Tfield (str,fld_knd,typ_exp1,typ_exp2)-> Format.fprintf fmt " Tfield \n"
+                                  | Tnil -> Format.fprintf fmt " Tnil \n"
+                                  |_-> Format.fprintf fmt " generate_Texp_construct \n"
+                      end
 
   | Texp_let (a,b,d) -> Format.fprintf fmt  "generate_expression--generate_let\n"
   | Texp_match (a,b,d,f) -> Format.fprintf fmt   "generate_expression--generate_match"
   | Texp_try (a,b) -> Format.fprintf fmt  "generate_expression--generate_try"
-  | Texp_construct (a,b,d) -> Format.fprintf fmt   "generate_expression--generate_construnct"
   | Texp_variant (d,f) -> Format.fprintf fmt   "generate_expression--generate_variant"
   | Texp_field (a,b,d) -> Format.fprintf fmt   "generate_expression--generate_field"
   | Texp_setfield (a,b,d,f) -> Format.fprintf fmt  "generate_expression--generate_setfield"
@@ -117,7 +142,34 @@ and generate_expression fmt exp_desc =
 
   | _ -> raise (Not_implemented_yet "generate_expression")
 
-                               
+ (* ************************** generate Path.t ************************** *)
+ and generate_path fmt path =
+              begin
+                      match path with
+                      | Pident ident_t ->
+                          (* if the function name exits in the list *)
+                            if(List.mem ident_t.name !l) 
+                              then 
+                                begin
+                                  Format.fprintf fmt " %s " ident_t.name;
+                                end
+                                  else
+                                    begin
+                                      Format.fprintf fmt " $%s " ident_t.name ;
+                                    end
+(*************************  génération d'opérateur et les operand  *)
+                      | Pdot (t,str,i) -> if (String.length str) > 1 && str.[1]='.'  then 
+                                                         Format.fprintf fmt " %c " str.[0] 
+                                                         else if (String.length str) > 1 && str.[1]='-' then
+                                                         Format.fprintf fmt " %c " str.[1]
+                                                         else if (String.length str) = 1 && str.[0]='='
+                                                         then Format.fprintf fmt " =%s " str
+                                                         else Format.fprintf fmt " %s " str
+
+                      | Papply (t_1,t_2) -> Format.fprintf fmt " == Papply (regarde dans /typing/path.ml)"
+                      | _-> Format.fprintf fmt "error_generate___Texp_ident__ ligne_164 \n"
+              end
+                              
 (* Pour appler la fonction generate_expression pour éviter la récursivité *)
 and generat_if_then_else fmt x = 
     generate_expression fmt x.exp_desc
@@ -134,15 +186,21 @@ and generate_param fmt param_op =
    
  
   
+  
 (* Generate Value Binding    *************************************************************************************************** *)
  
 let generate_value_binding fmt value_binding =
   let {vb_pat; vb_expr; vb_attributes; vb_loc} = value_binding in
   
     match vb_pat.pat_desc with
-  | Tpat_var (ident, loc) -> begin
+  | Tpat_var (ident, loc) ->  begin
                                 match vb_expr.exp_desc with
-                                | Texp_function (label,case,partial) ->  Format.fprintf fmt "function %s%a\n"  loc.txt  generate_expression vb_expr.exp_desc
+                                | Texp_function (label,case,partial) -> begin 
+                                (* add the Function name to the list *)
+                                      l:=loc.txt::!l;
+                                      Format.fprintf fmt "function %s%a\n"  loc.txt  generate_expression vb_expr.exp_desc ;
+
+                              end 
                                 | _ ->  Format.fprintf fmt "$%s = %a;\n"  loc.txt  generate_expression vb_expr.exp_desc
                              end
   | Tpat_any -> Format.fprintf fmt "generate_value_binding_any \n"
@@ -158,11 +216,21 @@ let generate_value_binding fmt value_binding =
   | _ ->  Format.fprintf fmt " generate_value_binding \n"
       
 (* Generate Structure Item   *************************************************************************************************** *)
-      
+
+
 let generate_structure_item fmt item =
   let { str_desc; _ } = item in
   match str_desc with
-  | Tstr_value (rec_flag, val_binds) -> List.iter (generate_value_binding fmt) val_binds
+  | Tstr_value (rec_flag, val_binds) ->begin 
+                                           match rec_flag with
+                                           | Nonrecursive -> List.iter (generate_value_binding fmt) val_binds
+                                           | Recursive -> 
+                                           begin
+                                            (* in order to update the list  *)
+                                            l:= [];
+                                           List.iter (generate_value_binding fmt) val_binds ;
+                                           end (* Format.fprintf fmt "rec here \n" *)
+                                        end 
   | Tstr_eval (exp,att) ->  generate_expression fmt exp.exp_desc
   | Tstr_primitive a -> Format.fprintf fmt " generate_structure_item_primitiv  \n"
   | Tstr_type e -> Format.fprintf fmt " generate_structure_item_type  \n"
