@@ -41,7 +41,7 @@ let rec generate_args fmt case =
                       generation_of_parameter fmt arg.c_lhs.pat_desc ;
                       Format.fprintf fmt ",";
                       match arg.c_rhs.exp_desc with
-                        | Texp_function (label,case,partial) ->  Format.fprintf fmt "%a"  generate_args case 
+                        | Texp_function (label,case,partial) -> Format.fprintf fmt "%a"  generate_args case 
                         | _ -> Format.fprintf fmt "ERROR_generate_args__match"
                        
                       end 
@@ -50,7 +50,7 @@ let rec generate_args fmt case =
                         Format.fprintf fmt " ){\n  " ; 
 (***************************  le cas ou on mets ou pas le return à l'intérieur d'une fonction  *)
                           match arg.c_rhs.exp_desc with
-                          | Texp_apply (exp,l_exp) -> Format.fprintf fmt "return "; generate_expression fmt arg.c_rhs.exp_desc; Format.fprintf fmt " ;\n }\n"; 
+                          | Texp_apply (exp,l_exp) -> Format.fprintf fmt "\t   return "; generate_expression fmt arg.c_rhs.exp_desc; Format.fprintf fmt " ;\n }\n"; 
                           | _ -> generate_expression fmt arg.c_rhs.exp_desc;Format.fprintf fmt "\n }\n";
                         
                       end
@@ -80,14 +80,20 @@ and generate_expression fmt exp_desc =
   | Texp_tuple tup -> Format.fprintf fmt "array ( " ; generate_array_and_tuple fmt tup ; Format.fprintf fmt " ) "
   | Texp_function (label,case,partial) ->  Format.fprintf fmt " ( "; generate_args fmt case
   | Texp_ifthenelse (cond,trait,alt) -> begin
-                                               Format.fprintf fmt   "if ( " ;generat_if_then_else fmt cond ; 
-                                               Format.fprintf fmt   " ) {\n return " ;generat_if_then_else fmt trait ; 
-                                               Format.fprintf fmt   ";\n }" ; 
-                                                match alt with 
-                                               | Some z-> Format.fprintf fmt "else{\nreturn "; generat_if_then_else fmt z;Format.fprintf fmt   " ;\n }\n"
-                                               | None -> Format.fprintf fmt   "\n";
+                                               Format.fprintf fmt   "\n if( " ;
+                                               generat_if_then_else fmt cond ; 
+                                               Format.fprintf fmt   " ) {\n " ;
+                                        
+                                                match trait.exp_desc with
 
-                                               
+                                                | Texp_constant cst -> Format.fprintf fmt "\t  return ";generat_if_then_else fmt trait; 
+                                                                       Format.fprintf fmt " ;\n }"; generate_else fmt alt
+                                                | Texp_ident (path,long,typ) -> Format.fprintf fmt "\t  return ";generat_if_then_else fmt trait; 
+                                                                       Format.fprintf fmt " ;\n }"; generate_else fmt alt
+                                                | Texp_apply (exp,l_exp) -> Format.fprintf fmt "\t  return ";generat_if_then_else fmt trait; 
+                                                                       Format.fprintf fmt " ;\n }"; generate_else fmt alt
+                                                | _ -> Format.fprintf fmt "\t  "; generat_if_then_else fmt trait; Format.fprintf fmt "\n }";
+                                                       generate_else fmt alt
                                         end
 
   | Texp_apply (exp,l_exp) ->  
@@ -167,12 +173,29 @@ and generate_expression fmt exp_desc =
                                                          else Format.fprintf fmt " %s " str
 
                       | Papply (t_1,t_2) -> Format.fprintf fmt " == Papply (regarde dans /typing/path.ml)"
-                      | _-> Format.fprintf fmt "error_generate___Texp_ident__ ligne_164 \n"
+                      | _-> Format.fprintf fmt "error_generate___Texp_ident \n"
               end
                               
 (* Pour appler la fonction generate_expression pour éviter la récursivité *)
-and generat_if_then_else fmt x = 
-    generate_expression fmt x.exp_desc
+and generat_body_else fmt trait = 
+    match trait.exp_desc with
+          | Texp_constant cst -> Format.fprintf fmt "\t  return "; generate_expression fmt trait.exp_desc;
+                                 Format.fprintf fmt " ;";
+          | Texp_ident (path,long,typ) -> Format.fprintf fmt "\t  return "; generate_expression fmt trait.exp_desc;
+                                          Format.fprintf fmt " ;";
+          | Texp_apply (exp,l_exp) -> Format.fprintf fmt "\t  return "; generate_expression fmt trait.exp_desc;
+                                      Format.fprintf fmt " ;";
+          | _ -> Format.fprintf fmt "\t  "; generate_expression fmt trait.exp_desc
+
+and generat_if_then_else fmt trait = 
+              generate_expression fmt trait.exp_desc
+
+and generate_else fmt alt=
+              match alt with 
+              | Some z-> Format.fprintf fmt "else{\n "; generat_body_else fmt z;
+                         Format.fprintf fmt   "\n }\n"
+              | None -> Format.fprintf fmt   "\n";
+
 
 (* généré l'operation avec ces parametre  *)
  and generate_apply_opp fmt exp1= 
@@ -198,10 +221,10 @@ let generate_value_binding fmt value_binding =
                                 | Texp_function (label,case,partial) -> begin 
                                 (* add the Function name to the list *)
                                       l:=loc.txt::!l;
-                                      Format.fprintf fmt "function %s%a\n"  loc.txt  generate_expression vb_expr.exp_desc ;
+                                      Format.fprintf fmt "\n function %s%a\n"  loc.txt  generate_expression vb_expr.exp_desc ;
 
                               end 
-                                | _ ->  Format.fprintf fmt "$%s = %a;\n"  loc.txt  generate_expression vb_expr.exp_desc
+                                | _ ->  Format.fprintf fmt "\n $%s = %a;\n"  loc.txt  generate_expression vb_expr.exp_desc
                              end
   | Tpat_any -> Format.fprintf fmt "generate_value_binding_any \n"
   | Tpat_alias (a,b,c) -> Format.fprintf fmt " generate_value_binding_alias \n"

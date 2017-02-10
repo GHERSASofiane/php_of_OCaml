@@ -44,7 +44,7 @@ let max a b =
 if(3>4) then 1+2-4 else 0
   
 let rec fact x =
-  if x <= 1 then 1 else x * fact (x - 1)
+  if x <= 1 then x else x * fact (x - 1)
 let rec range a b =
     if a > b then []
     else a :: range (a+1) b
