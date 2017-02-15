@@ -1,3 +1,4 @@
+print_char 'a'
 
 let tup_1_elem = ( 88)
 let tup_2_elem = ( 'a', "ocaml")

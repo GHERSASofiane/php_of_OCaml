@@ -96,10 +96,8 @@ and generate_expression fmt exp_desc =
                                                        generate_else fmt alt
                                         end
 
-  | Texp_apply (exp,l_exp) ->  
-                                      if (List.length l_exp) = 1 then 
+  | Texp_apply (exp,l_exp) -> if (List.length l_exp) = 1 then 
                                       begin
-                                        
                                         generate_apply_opp fmt exp;
                                         Format.fprintf fmt " ( ";
                                         generate_param fmt (List.nth l_exp 0);
@@ -150,11 +148,11 @@ and generate_expression fmt exp_desc =
 
  (* ************************** generate Path.t ************************** *)
  and generate_path fmt path =
-              begin
-                      match path with
+    let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print_endline";"print_newline"] in 
+              
+                       match path with
                       | Pident ident_t ->
-                          (* if the function name exits in the list *)
-                            if(List.mem ident_t.name !l) 
+                                          if(List.mem ident_t.name !l) 
                               then 
                                 begin
                                   Format.fprintf fmt " %s " ident_t.name;
@@ -170,11 +168,13 @@ and generate_expression fmt exp_desc =
                                                          Format.fprintf fmt " %c " str.[1]
                                                          else if (String.length str) = 1 && str.[0]='='
                                                          then Format.fprintf fmt " =%s " str
+(*********** si c'est une fonction  d'affichage       *) else if (List.mem str !tab_print) 
+                                                         then Format.fprintf fmt "echo  "
                                                          else Format.fprintf fmt " %s " str
 
                       | Papply (t_1,t_2) -> Format.fprintf fmt " == Papply (regarde dans /typing/path.ml)"
                       | _-> Format.fprintf fmt "error_generate___Texp_ident \n"
-              end
+              
                               
 (* Pour appler la fonction generate_expression pour éviter la récursivité *)
 and generat_body_else fmt trait = 
