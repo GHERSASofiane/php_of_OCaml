@@ -74,6 +74,7 @@ and  generate_array_and_tuple fmt tpl =
 
    
 and generate_expression fmt exp_desc = 
+   let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print_endline";"print_newline"] in
   match exp_desc with
   | Texp_constant cst ->  generate_constant fmt cst 
   | Texp_array ary -> Format.fprintf fmt "array ( " ; generate_array_and_tuple fmt ary ; Format.fprintf fmt ")"
@@ -98,17 +99,41 @@ and generate_expression fmt exp_desc =
 
   | Texp_apply (exp,l_exp) -> if (List.length l_exp) = 1 then 
                                       begin
-                                        generate_apply_opp fmt exp;
-                                        Format.fprintf fmt " ( ";
-                                        generate_param fmt (List.nth l_exp 0);
-                                        Format.fprintf fmt " ) ";
+                                        match exp.exp_desc with
+                                        | Texp_ident (path,long,typ) -> begin
+                                          match path with
+                                          | Pdot (t,str,i) -> if (List.mem str !tab_print) 
+                                                                 then begin (* echo *) 
+                                                                    Format.fprintf fmt "echo  ";
+                                                                    Format.fprintf fmt " ( ";
+                                                                      if str = "print_newline" then 
+                                                                            Format.fprintf fmt "\" \\n \""
+                                                                      else 
+                                                                           generate_param fmt (List.nth l_exp 0);
+                                                                           if str = "print_endline" then Format.fprintf fmt ".\" \\n \"" 
+                                                                           else Format.fprintf fmt " ";
+                                                                      
+                                                                    
+                                                                    Format.fprintf fmt " ); \n";
+                                                                 end  
+                                                              else begin  (* operateur unir *)
+                                                                    generate_apply_opp fmt exp;
+                                                                    Format.fprintf fmt "(";
+                                                                    generate_param fmt (List.nth l_exp 0);
+                                                                    Format.fprintf fmt ")\n";
+                                                              end
+                                          | _ -> begin (* appel de fonction récursive *)
+                                                    generate_apply_opp fmt exp;
+                                                    generate_param fmt (List.nth l_exp 0);
+                                                 end
+                                        end 
+                                        | _ -> Format.fprintf fmt " a_traite_en_generate_expression_Texp_apply_2  ";
+                                        
+                                      
                                       end
                                       
-                                      else begin
-                                        generate_param fmt (List.nth l_exp 0);
-                                        generate_apply_opp fmt exp;
-                                        if (List.length l_exp > 1) then generate_param fmt (List.nth l_exp 1);
-                                        end
+                                      else generate_Texp_apply fmt exp l_exp;
+       
                                 
   | Texp_ident (path,long,typ)    -> generate_path fmt path
 
@@ -144,11 +169,73 @@ and generate_expression fmt exp_desc =
   | Texp_object (a,b)  -> Format.fprintf fmt  "generate_expression--generate_object"
   | Texp_pack h -> Format.fprintf fmt   "generate_expression--generate_pack"
 
-  | _ -> raise (Not_implemented_yet "generate_expression")
+  | _ -> raise (Not_implemented_yet "generate_expression")  
+
+
+ (* ************************** generate Texp_apply pour les operateur binaire ************************** *)
+and generate_Texp_apply fmt exp l_exp =
+ let tab_op= ["+";"+.";"-";"-.";"*";"*.";"/";"/.";"<";"<=";">";">=";"=";"==";"<>";"!="] in
+    match exp.exp_desc with
+    | Texp_ident (path,long,typ) -> begin
+        match path with
+        | Pdot (t,str,i) ->begin
+              if (List.mem str tab_op)  then 
+                begin
+                  Format.fprintf fmt " (";generate_param fmt (List.nth l_exp 0);
+                  generate_operateur fmt str;
+                  generate_param fmt (List.nth l_exp 1);Format.fprintf fmt " )";
+                end
+                
+              else begin
+                (*************************** traitement sur les operateur binaire  *)
+                match str with
+                | "min" -> Format.fprintf fmt "echo min( "; generate_param fmt (List.nth l_exp 0);
+                           Format.fprintf fmt " , "; generate_param fmt (List.nth l_exp 1); Format.fprintf fmt " );\n";
+                | "max" -> Format.fprintf fmt "echo max( "; generate_param fmt (List.nth l_exp 0);
+                           Format.fprintf fmt " , "; generate_param fmt (List.nth l_exp 1); Format.fprintf fmt " );\n";
+                | "&&" -> generate_param fmt (List.nth l_exp 0);
+                           Format.fprintf fmt " && "; generate_param fmt (List.nth l_exp 1); Format.fprintf fmt "\n";
+                | "&" -> generate_param fmt (List.nth l_exp 0);
+                           Format.fprintf fmt " && "; generate_param fmt (List.nth l_exp 1); Format.fprintf fmt "\n";
+                | "||" -> generate_param fmt (List.nth l_exp 0);
+                           Format.fprintf fmt " || "; generate_param fmt (List.nth l_exp 1); Format.fprintf fmt "\n";
+                | "mod" -> generate_param fmt (List.nth l_exp 0);Format.fprintf fmt " %c " '%';
+                           generate_param fmt (List.nth l_exp 1);Format.fprintf fmt "\n";
+                | "**" ->Format.fprintf fmt "pow(";generate_param fmt (List.nth l_exp 0);Format.fprintf fmt " , ";
+                        generate_param fmt (List.nth l_exp 1); Format.fprintf fmt ")\n";
+                | "^" -> generate_param fmt (List.nth l_exp 0);Format.fprintf fmt " . ";
+                           generate_param fmt (List.nth l_exp 1);Format.fprintf fmt "\n";
+                
+
+                | _ -> Format.fprintf fmt " NON_traiter_dans_generate_Texp_apply ";
+              end    
+                           end 
+        | Pident ident_t -> begin
+           let taille_l_exp = (List.length l_exp) in
+                              Format.fprintf fmt " %s (" ident_t.name;
+                               
+                              if taille_l_exp > 1 then 
+                                  begin
+                                      for i = 0 to taille_l_exp - 2 do
+                                      generate_param fmt (List.nth l_exp i);
+                                      Format.fprintf fmt " ,";
+                                      done;
+                                      generate_param fmt (List.nth l_exp (taille_l_exp - 1));
+                                  end
+                              else if taille_l_exp = 1 then
+                                      generate_param fmt (List.nth l_exp 0)
+                              else 
+                                 Format.fprintf fmt "";
+ 
+                                Format.fprintf fmt " )";
+                            end
+        
+        | _ -> Format.fprintf fmt " Error_generate_Texp_apply_1 ";
+                                    end
+    | _ ->  Format.fprintf fmt " Error_generate_Texp_apply_2 "; 
 
  (* ************************** generate Path.t ************************** *)
  and generate_path fmt path =
-    let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print_endline";"print_newline"] in 
               
                        match path with
                       | Pident ident_t ->
@@ -159,23 +246,28 @@ and generate_expression fmt exp_desc =
                                 end
                                   else
                                     begin
-                                      Format.fprintf fmt " $%s " ident_t.name ;
+                                      Format.fprintf fmt " $%s  " ident_t.name ;
                                     end
-(*************************  génération d'opérateur et les operand  *)
-                      | Pdot (t,str,i) -> if (String.length str) > 1 && str.[1]='.'  then 
+
+                      | Pdot (t,str,i) -> generate_operateur fmt str;
+
+                      | Papply (t_1,t_2) -> Format.fprintf fmt " == Papply (regarde dans /typing/path.ml)"
+                      | _-> Format.fprintf fmt "error_generate___Texp_ident \n"
+
+  (*************************  génération d'opérateur et les operand  *)                    
+ and generate_operateur fmt str=             
+                               if (String.length str) > 1 && str.[1]='.'  then 
                                                          Format.fprintf fmt " %c " str.[0] 
                                                          else if (String.length str) > 1 && str.[1]='-' then
                                                          Format.fprintf fmt " %c " str.[1]
                                                          else if (String.length str) = 1 && str.[0]='='
                                                          then Format.fprintf fmt " =%s " str
-(*********** si c'est une fonction  d'affichage       *) else if (List.mem str !tab_print) 
-                                                         then Format.fprintf fmt "echo  "
+                                                         else if str = "not" then Format.fprintf fmt "! "
+                                                         else if str = "succ" then Format.fprintf fmt "(1) + "
+                                                         else if str = "pred" then Format.fprintf fmt "--"
+                                                         else if str = "abs" then Format.fprintf fmt "echo abs  "
                                                          else Format.fprintf fmt " %s " str
 
-                      | Papply (t_1,t_2) -> Format.fprintf fmt " == Papply (regarde dans /typing/path.ml)"
-                      | _-> Format.fprintf fmt "error_generate___Texp_ident \n"
-              
-                              
 (* Pour appler la fonction generate_expression pour éviter la récursivité *)
 and generat_body_else fmt trait = 
     match trait.exp_desc with
