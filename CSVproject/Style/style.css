@@ -56,7 +56,9 @@ form{
 	background-color: #2A48DD;
 	text-align: center;
 }
-
+.disp{
+	display : inline;
+}
 form {
 text-align : left;
 }

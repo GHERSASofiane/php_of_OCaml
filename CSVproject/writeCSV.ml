@@ -40,10 +40,11 @@ let rec generate_str lst =
 	| []  -> s:= !s ^"\n"
 	| hd::rst ->begin
                       for i = 0 to (List.length hd)-1 do
-                      s:= !s ^ (List.nth hd i)^"\t";
-                      done;
-                      s:= !s ^"\n";
-                                                                                      (* make all strings in the buffer *)
+                      if(i = (List.length hd)-1) then
+                      s:= !s ^ (List.nth hd i)^"\n"
+                    else
+                    s:= !s ^ (List.nth hd i)^","
+                      done;                                                     (* make all strings in the buffer *)
                           buf:= !s::!buf;
                       s:= "";
                       generate_str rst;
@@ -52,15 +53,16 @@ let rec generate_str lst =
 let add tab = 
 	begin
 		for i = 0 to (List.length tab)-1 do
-                 sNew:= !sNew ^ (List.nth tab i)^"\t";
+			if(i=(List.length tab)-1)then
+                 sNew:= !sNew ^ (List.nth tab i)^"\n"
+             else
+             	sNew:= !sNew ^ (List.nth tab i)^","
     done;
-		sNew:= !sNew ^"\n"
 	end
 	
 
 let main () = 
   let file = Sys.argv.(1) in let lst = lire_csv file in
-  (* let buf = ref [] in *)
     let l = ref lst in
     		 generate_str !l ;
 let x = Sys.argv.(2) in

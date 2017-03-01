@@ -3,21 +3,12 @@ if (isset($_POST['submit'])){
 	$user =$_POST['user'];
 	$mail =$_POST['mail'];
 	$phone =$_POST['phone'];
-$cmd = $user.";".$mail.";".$phone;
-$output = shell_exec("ocamlc str.cma read.ml");
+$cmd = '"'.$user.",".$mail.",".$phone."'";
+$output = shell_exec("./writein te.csv $cmd");
 echo "<pre>$output</pre>";
-// $varr = './a.out te.csv "'.$cmd.'"';
-//  shell_exec($varr);
-// echo "<center><pre>$varr</pre></center>";
-}
-
-if (isset($_POST['submit2'])){
-
-}
     
- if (isset($_POST['submit3'])){
-  
 }
+
 ?>
 
 <html>
@@ -51,29 +42,41 @@ if (isset($_POST['submit2'])){
     <form method="post" action="" class="myForm">
    <label>Delete data </label><br /><br />
 
-    <label>Username</label><input type="text" name="user" class="champs" required="required" /><br />
+    <label>Username</label><input type="text" name="delete" class="champs" required="required" /><br />
 
          
       
-<input type="submit" value="valide" name="submit2"/> 
+<input type="submit" value="delete" name="submit2"/> 
 
         
         
 </form>
     
     <form method="post" action="" class="myForm">
-   <label>Search data from file </label><br /><br />
+   <label>Display content file </label><br /><br />
 
-    <label>Username</label><input type="text" name="user" class="champs" required="required" /><br />
 
          
       
-<input type="submit" value="valide" name="submit3"/> 
+<input type="submit" value="display" name="submit3"/> 
 
 </form>
 
+<?php
+if (isset($_POST['submit3'])) {
+  $output4 = shell_exec("make disp");
+echo "<center><pre>$output4</pre></center>";
+}
 
-</form>
+    if (isset($_POST['submit2'])){
+    $delete =$_POST['delete'];
+    $todelete = shell_exec("./delete te.csv $delete");
+echo "<center><pre>$todelete</pre></center>";
+}
+    
+    ?>
+
+
 </div>
 
 
