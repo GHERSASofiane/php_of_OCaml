@@ -1,0 +1,69 @@
+#logo_ocaml{
+	position:absolute;
+		top: 1%;
+		left: 1%;
+}
+
+#logo_php{
+	position:absolute;
+		top: 1%;
+		left: 89%;
+}
+
+
+#search_bar{
+
+	margin: 8%  5% 3% 5%;
+	padding: 4% 5% 30% 5%;
+	color:  #ffffff;
+	background-color: #F0781F;
+	text-align: center;
+}
+
+#ocaml_bar{
+
+		position:absolute;
+		top: 15%;
+		right: 50%;
+		left: 1%;
+		bottom: 5%;
+
+	padding: 4% 5% 30% 5%;
+	color:  #ffffff;
+	background-color: #F0781F;
+	text-align: center;
+}
+
+form{
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+#php_bar{
+
+	margin: 8%  5% 3% 5%;
+	padding: 4% 5% 30% 5%;
+	color:  #ffffff;
+	background-color: #2A48DD;
+	text-align: center;
+}
+
+#p_php_bar{
+
+	margin: 0%  5% 3% 5%;
+	
+	color:  #ffffff;
+	background-color: #2A48DD;
+	text-align: center;
+}
+
+form {
+text-align : left;
+}
+.myForm{
+    
+display : inline-block;
+}
+.champs {
+display : block;
+}
