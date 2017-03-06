@@ -2,13 +2,11 @@
 OCAMLC = ocamlc
 OCAML = ./
 
-all: CSV.ml writeCSV.ml searchCSV.ml deleteCSV.ml
-	$(OCAMLC) str.cma writeCSV.ml -o writein
-	$(OCAMLC) str.cma searchCSV.ml -o searchin
-	$(OCAMLC) str.cma deleteCSV.ml -o delete
-	$(OCAMLC) str.cma CSV.ml -o display
+all: Inscription.ml
+	$(OCAMLC) str.cma Inscription.ml -o Inscription
+	./Inscription
 clean:
-	rm -r *.cmi *.cmo display writein searchin delete
+	rm -r *.cmi *.cmo Inscription
 
 disp:
 	$(OCAML)display te.csv
