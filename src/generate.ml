@@ -6,7 +6,7 @@ open Types
 exception Not_implemented_yet of string
 (* initialize a list to store function names *)
 let l = ref []
-
+let is_prem = ref true
 (* Generate Constant   ******************************************************************************************************* *)
 
 let generate_constant fmt cst =
@@ -158,9 +158,17 @@ let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print
                                 x:= ident_t.name;
                                 if(!x="unit") then Format.fprintf fmt "() \n" else 
                                   if (!x= "list") then
-                                                    begin
-                                                      Format.fprintf fmt "%s " cd.cstr_name;
-                                                      generate_contruct fmt exp_list;
+                                                    
+                                                      
+                                                      if !is_prem = true then begin
+                                                        is_prem := not !is_prem;
+                                                        generate_contruct fmt exp_list
+                                                      end 
+                                                    else begin
+                                                      Format.fprintf fmt " , " ;
+                                                      generate_contruct fmt exp_list
+                                                    end
+                                                      
                                                      (*  if cd.cstr_name = "::" then 
                                                       begin
                                                         match exp_list with
@@ -174,7 +182,7 @@ let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print
                                                        (* Format.fprintf fmt "%s " cd.cstr_name; *)
                                                        (* generate_contruct fmt exp_list; *) *)
                                                         
-                                                    end
+                                                    
                                       
                               end
                           | _ -> Format.fprintf fmt "Cunstruct Path.t error";
@@ -235,9 +243,9 @@ let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print
 
 and generate_contruct fmt tab =
    match tab with
-   | [] -> Format.fprintf fmt " "
+   | [] -> Format.fprintf fmt "nnnnn "
    | a::[] ->  generate_expression fmt a.exp_desc
-   | x::rest ->  Format.fprintf fmt " a ";generate_expression fmt x.exp_desc ;  generate_contruct fmt rest 
+   | x::rest ->  generate_expression fmt x.exp_desc ;  generate_contruct fmt rest 
    | _ -> Format.fprintf fmt " nnnn "
 
  (* ************************** generate Path.t ************************** *)
