@@ -1,4 +1,4 @@
-open Printf
+
 type user = { 
             id: int;
            mutable nom: string; 
@@ -43,33 +43,6 @@ let sNew = ref ""
 let buf = ref []
 let list_users = ref []
 
-
-
-let lire_file file =
-  let entree = (open_in file)
-  and result = ref [] in 
-  begin
-        try
-            let ligne = ref (Str.split (Str.regexp ";") (input_line entree)) in
-            let nb_champs = (List.length !ligne) in
-            while true do
-                      if (List.length !ligne) != nb_champs then
-                          print_endline "Erreur de lecteur" 
-                      else
-                          result := List.append !result [ !ligne ];
-                          ligne := (Str.split (Str.regexp ";") (input_line entree))
-                      done
-        with
-          | End_of_file -> close_in entree
-  end;
-  !result
-
-
-
-(************************************************************************************************************)
-(************************************************************************************************************)
-                          (**********   fonction de création d'un user   **********)
-(************************************************************************************************************)
 (* pour remplacer la fonction split *)
 let split chaine separateur =
   let result = ref [] in
@@ -89,6 +62,33 @@ let split chaine separateur =
         result :=  !ch :: !result;
   end;
   !result
+
+let lire_file file =
+  let entree = (open_in file)
+  and result = ref [] in 
+  begin
+        try
+            let ligne = ref (split (input_line entree) ';' ) in
+            let nb_champs = (List.length !ligne) in
+            while true do
+                      if (List.length !ligne) != nb_champs then
+                          print_endline "Erreur de lecteur" 
+                      else
+                          result := List.append !result [ !ligne ];
+                          ligne := (split (input_line entree) ';' )
+                      done
+        with
+          | End_of_file -> close_in entree
+  end;
+  !result
+
+
+
+(************************************************************************************************************)
+(************************************************************************************************************)
+                          (**********   fonction de création d'un user   **********)
+(************************************************************************************************************)
+
     
 
 let rec generate_str lst =
@@ -125,7 +125,7 @@ let write usr =
   let l = ref list_ligne in generate_str !l ;
   
   let x = id^";"^usr.nom^";"^usr.date_naissance^";"^usr.mail^";"^usr.telephone in
-  let u = (Str.split (Str.regexp ";") x)  in add u;
+  let u = (split x ';')  in add u;
 
   buf:= !sNew::!buf ;
 

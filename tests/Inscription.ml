@@ -43,19 +43,39 @@ let sNew = ref ""
 let buf = ref []
 let list_users = ref []
 
+(* pour remplacer la fonction split *)
+let split chaine separateur =
+  let result = ref [] in
+  begin
+        let ch = ref "" in 
+        for i = 0 to String.length chaine - 1 do
+               begin
+                  if chaine.[i] = separateur then 
+                  begin
+                      result :=  !ch :: !result; ch := ""
+                  end
+                  else 
+                      ch := !ch^(String.make 1 chaine.[i])
+               end
+        
+        done;
+        result :=  !ch :: !result;
+  end;
+  !result
+
 let lire_file file =
   let entree = (open_in file)
   and result = ref [] in 
   begin
         try
-            let ligne = ref (Str.split (Str.regexp ";") (input_line entree)) in
+            let ligne = ref (split (input_line entree) ';' ) in
             let nb_champs = (List.length !ligne) in
             while true do
                       if (List.length !ligne) != nb_champs then
                           print_endline "Erreur de lecteur" 
                       else
                           result := List.append !result [ !ligne ];
-                          ligne := (Str.split (Str.regexp ";") (input_line entree))
+                          ligne := (split (input_line entree) ';' )
                       done
         with
           | End_of_file -> close_in entree
@@ -69,7 +89,7 @@ let lire_file file =
                           (**********   fonction de création d'un user   **********)
 (************************************************************************************************************)
 
-
+    
 
 let rec generate_str lst =
   match lst with
@@ -105,7 +125,7 @@ let write usr =
   let l = ref list_ligne in generate_str !l ;
   
   let x = id^";"^usr.nom^";"^usr.date_naissance^";"^usr.mail^";"^usr.telephone in
-  let u = (Str.split (Str.regexp ";") x)  in add u;
+  let u = (split x ';')  in add u;
 
   buf:= !sNew::!buf ;
 
@@ -255,7 +275,11 @@ let list () =
 (* let _ =   write usr3;; *)
 
 (* List users *) 
-let _ =   list () ;; 
+(* let _ =   list () ;;  *)
+let _ = 
+  let tab = split "kasdi;hacene;ghersa;sofiane" ';' in 
+  print_string " nombre d'element dans le tableau est : "; print_int (List.length tab) ; print_endline ""
+ ;;
 
 (* delete user 2 *) 
 (* let _ =   delete 2 ;;  *)
