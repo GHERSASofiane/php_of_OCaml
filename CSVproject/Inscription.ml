@@ -43,6 +43,8 @@ let sNew = ref ""
 let buf = ref []
 let list_users = ref []
 
+
+
 let lire_file file =
   let entree = (open_in file)
   and result = ref [] in 
@@ -68,8 +70,26 @@ let lire_file file =
 (************************************************************************************************************)
                           (**********   fonction de création d'un user   **********)
 (************************************************************************************************************)
-
-
+(* pour remplacer la fonction split *)
+let split chaine separateur =
+  let result = ref [] in
+  begin
+        let ch = ref "" in 
+        for i = 0 to String.length chaine - 1 do
+               begin
+                  if chaine.[i] = separateur then 
+                  begin
+                      result :=  !ch :: !result; ch := ""
+                  end
+                  else 
+                      ch := !ch^(String.make 1 chaine.[i])
+               end
+        
+        done;
+        result :=  !ch :: !result;
+  end;
+  !result
+    
 
 let rec generate_str lst =
   match lst with
@@ -255,7 +275,11 @@ let list () =
 (* let _ =   write usr3;; *)
 
 (* List users *) 
-let _ =   list () ;; 
+(* let _ =   list () ;;  *)
+let _ = 
+  let tab = split "kasdi;hacene;ghersa;sofiane" ';' in 
+  print_string " nombre d'element dans le tableau est : "; print_int (List.length tab) ; print_endline ""
+ ;;
 
 (* delete user 2 *) 
 (* let _ =   delete 2 ;;  *)
