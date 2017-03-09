@@ -123,10 +123,10 @@ let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print
                                          end  
                                       else begin  (* operateur unir *)
                                          (* test si not on met !  *)
-                                            Format.fprintf fmt "(";
+                                            Format.fprintf fmt "("; 
                                             call_generate_expression fmt exp;
                                             generate_param fmt (List.nth l_exp 0);
-                                            Format.fprintf fmt ")\n";
+                                            Format.fprintf fmt ")";
                                       end
                   | _ -> begin (* appel de fonction récursive *)
                             call_generate_expression fmt exp;
@@ -142,6 +142,7 @@ let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print
        
                                 
   | Texp_ident (path,long,typ)    -> generate_path fmt path
+                                     
 (* ===================================   generate a constructor ================================================================= *)
   | Texp_construct (long_id,cd,exp_list) -> 
            let vv = cd.cstr_name in
@@ -162,7 +163,9 @@ let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print
                                                       
                                                       if !is_prem = true then begin
                                                         is_prem := not !is_prem;
-                                                        generate_contruct fmt exp_list
+                                                        Format.fprintf fmt "Array ( ";
+                                                        generate_contruct fmt exp_list;
+                                                        Format.fprintf fmt " );\n ";
                                                       end 
                                                     else begin
                                                       Format.fprintf fmt " , " ;
@@ -238,15 +241,15 @@ let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print
   | Texp_object (a,b)  -> Format.fprintf fmt  "generate_expression--generate_object"
   | Texp_pack h -> Format.fprintf fmt   "generate_expression--generate_pack"
 
-  | _ -> raise (Not_implemented_yet "generate_expression")
+  | _ -> raise (Not_implemented_yet "Cas_non_etudie_generate_expression")
 
 
 and generate_contruct fmt tab =
    match tab with
-   | [] -> Format.fprintf fmt "nnnnn "
+   | [] -> Format.fprintf fmt "  "
    | a::[] ->  generate_expression fmt a.exp_desc
    | x::rest ->  generate_expression fmt x.exp_desc ;  generate_contruct fmt rest 
-   | _ -> Format.fprintf fmt " nnnn "
+   | _ -> Format.fprintf fmt " Error_generate_contruct "
 
  (* ************************** generate Path.t ************************** *)
  and generate_path fmt path =
@@ -267,7 +270,7 @@ and generate_contruct fmt tab =
                             Format.fprintf fmt " %c " str.[0] 
                             else if (String.length str) > 1 && str.[1]='-' then
                             Format.fprintf fmt " %c " str.[1]
-                            else Format.fprintf fmt " %s " str
+                            else if str = "ref" then Format.fprintf fmt "  " else Format.fprintf fmt " %s " str
 
                       | Papply (t_1,t_2) -> Format.fprintf fmt " == Papply (regarde dans /typing/path.ml)"
                       | _-> Format.fprintf fmt "error_generate___Texp_ident \n"
@@ -404,7 +407,7 @@ let generate_value_binding fmt value_binding =
 
                                 end 
                                
-                                | _ ->  Format.fprintf fmt "$%s = %a;\n"  loc.txt  generate_expression vb_expr.exp_desc
+                                | _ ->  Format.fprintf fmt "$%s = %a;\n"  loc.txt  generate_expression vb_expr.exp_desc (*  pour les vergule en ref *)
                              end
   | Tpat_any -> Format.fprintf fmt "generate_value_binding_any \n"
   | Tpat_alias (a,b,c) -> Format.fprintf fmt " generate_value_binding_alias \n"
@@ -422,6 +425,7 @@ let generate_value_binding fmt value_binding =
 
 
 let generate_structure_item fmt item =
+  is_prem := not !is_prem;
   let { str_desc; _ } = item in
   match str_desc with
   | Tstr_value (rec_flag, val_binds) -> begin 
@@ -449,11 +453,11 @@ let generate_structure_item fmt item =
                                                  | Pident ident_t -> 
                                                     begin
                                                         if(ident_t.name="unit") then Format.fprintf fmt "() \n"
-                                                        else 
-                                                        begin
+                                                        else generate_expression fmt exp.exp_desc
+                                                       (*  begin
                                                           Format.fprintf fmt " Array (";
                                                           generate_expression fmt exp.exp_desc ;Format.fprintf fmt " );\n           "
-                                                        end
+                                                         end*)
                                                     end
                                                   |_ -> Format.fprintf fmt " Error_generate_structure_item_0"
                                               end
