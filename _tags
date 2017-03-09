@@ -1,4 +1,5 @@
 <src>: include
+<tests>: not_hygienic
 
 true: package(compiler-libs.common, compiler-libs, str)
 
