@@ -7,7 +7,6 @@ all:
 	ocamlbuild -use-ocamlfind $(TARGET).byte
 
 clean:
-	ocamlbuild -clean
 	rm -rf tests/*.php
 
 tests: clean all
