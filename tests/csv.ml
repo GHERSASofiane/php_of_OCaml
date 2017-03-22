@@ -1,3 +1,4 @@
+open Printf
 type user = { 
             id: int;
            mutable nom: string; 
@@ -10,34 +11,33 @@ type user = {
 (**********************************************    pour le test   *******************************************)
 (************************************************************************************************************)
 
-(* let usr1 = {  *)
-(*             id = 1 ; *)
-(*             nom = "ghersa";  *)
-(*             date_naissance = "01/04/1993"; *)
-(*             mail = "m.ghersa.s@gmail.com"; *)
-(*             telephone = "000  000 000 000"; *)
-(*             } *)
+let usr1 = { 
+            id = 1 ;
+            nom = "ghersa"; 
+            date_naissance = "01/04/1993";
+            mail = "m.ghersa.s@gmail.com";
+            telephone = "000  000 000 000";
+            }
 
-(* let usr2 = {  *)
-(*             id = 2 ; *)
-(*             nom = "kasdi";  *)
-(*             date_naissance = "01/03/1994"; *)
-(*             mail = "m.kasdi.h@gmail.com"; *)
-(*             telephone = "111 111 111 111"; *)
-(*             } *)
+let usr2 = { 
+            id = 2 ;
+            nom = "kasdi"; 
+            date_naissance = "01/03/1994";
+            mail = "m.kasdi.h@gmail.com";
+            telephone = "111 111 111 111";
+            }
 
-(* let usr3 = {  *)
-(*             id = 3 ; *)
-(*             nom = "toto";  *)
-(*             date_naissance = "00/11/2016"; *)
-(*             mail = "toto.tata@gmail.com"; *)
-(*             telephone = "333 333 333 333"; *)
-(*             } *)
+let usr3 = { 
+            id = 3 ;
+            nom = "toto"; 
+            date_naissance = "00/11/2016";
+            mail = "toto.tata@gmail.com";
+            telephone = "333 333 333 333";
+            }
 
 (************************************************************************************************************)
 (******************************************    fonction et variable util     ********************************)
 (************************************************************************************************************)
-
 let s = ref ""
 let sNew = ref ""
 let buf = ref []
@@ -46,20 +46,22 @@ let list_users = ref []
 (* pour remplacer la fonction split *)
 let split chaine separateur =
   let result = ref [] in
-  let ch = ref "" in 
-  for i = 0 to String.length chaine - 1 do 
-    begin
-      if chaine.[i] = separateur then 
-        begin
-          result :=  !ch :: !result; ch := ""
-        end
-      else 
-        ch := !ch^(String.make 1 chaine.[i])
-    end
-      
-  done;
-  result :=  !ch :: !result;
-  !result
+  begin
+        let ch = ref "" in 
+        for i = 0 to String.length chaine - 1 do
+               begin
+                  if chaine.[i] = separateur then 
+                  begin
+                      result :=  !ch :: !result; ch := ""
+                  end
+                  else 
+                      ch := !ch^(String.make 1 chaine.[i])
+               end
+        
+        done;
+        result :=  !ch :: !result;
+  end;
+ !result
 
 let lire_file file =
   let entree = (open_in file)
@@ -73,11 +75,12 @@ let lire_file file =
                           print_endline "Erreur de lecteur" 
                       else
                           result := List.append !result [ !ligne ];
-                          ligne := (split (input_line entree) ';' )
+                          ligne := (split (input_line entree) ';' ) 
                       done
         with
           | End_of_file -> close_in entree
   end;
+  
   !result
 
 
@@ -86,15 +89,33 @@ let lire_file file =
 (************************************************************************************************************)
                           (**********   fonction de création d'un user   **********)
 (************************************************************************************************************)
-
+(* pour remplacer la fonction split *)
+let split chaine separateur =
+  let result = ref [] in
+  begin
+        let ch = ref "" in 
+        for i = 0 to String.length chaine - 1 do
+               begin
+                  if chaine.[i] = separateur then 
+                  begin
+                      result :=  !ch :: !result; ch := ""
+                  end
+                  else 
+                      ch := !ch^(String.make 1 chaine.[i])
+               end
+        
+        done;
+        result :=  !ch :: !result;
+  end;
+  !result
     
 
 let rec generate_str lst =
   match lst with
   | []  -> () 
   | hd::rst ->begin
-                      for i = 0 to (List.length hd)-1 do
-                              if(i = (List.length hd)-1) then
+                      for i = (List.length hd)-1 downto 0 do
+                              if(i = 0) then
                                 s:= !s ^ (List.nth hd i)^"\n"
                               else
                                 s:= !s ^ (List.nth hd i)^";" 
@@ -108,6 +129,7 @@ let rec generate_str lst =
 let add tab = 
   begin
     for i = 0 to (List.length tab)-1 do
+
       if(i=(List.length tab)-1)then
                  sNew:= !sNew ^ (List.nth tab i)^"\n"
              else
@@ -122,13 +144,15 @@ let write usr =
   let list_ligne = lire_file file in
   let l = ref list_ligne in generate_str !l ;
   
-  let x = id^";"^usr.nom^";"^usr.date_naissance^";"^usr.mail^";"^usr.telephone in
-  let u = (split x ';')  in add u;
+  let x = usr.telephone^";"^usr.mail^";"^usr.date_naissance^";"^usr.nom^";"^id in
+
+  let u = (split x ';' )  in add u;
+
 
   buf:= !sNew::!buf ;
 
   let out_chanel = open_out file in 
-        for i = List.length !buf -1 downto 0 do
+        for i = 0 to List.length !buf -1 do
           output_string out_chanel (List.nth !buf i);
         done;
          buf:=[] ;
@@ -146,13 +170,13 @@ let rec generate_dlt lst id =
   match lst with
   | []  ->  s:= !s ^"" 
   | hd::rst ->begin 
-                      for i = 0 to (List.length hd)-1 do
+                      for i = (List.length hd)-1 downto 0 do
                       begin
-                        if (List.nth hd 0) = id  then  ()
+                        if (List.nth hd 4) = id  then  ()
                               else 
                               begin
                                 
-                                  if(i = (List.length hd)-1) then
+                                  if (i = 0) then
                                       s:= !s ^ (List.nth hd i)^"\n"
                                   else
                                       s:= !s ^ (List.nth hd i)^";"  
@@ -192,12 +216,12 @@ let rec generate_search tab id usr_search =
   match tab with
                 | []  ->  () 
                 | hd::rst ->begin 
-                          if (List.nth hd 0) = id then 
+                          if (List.nth hd 4) = id then 
                           begin
-                            !usr_search.nom <- (List.nth hd 1);
+                            !usr_search.nom <- (List.nth hd 3);
                             !usr_search.date_naissance <- (List.nth hd 2);
-                            !usr_search.mail <- (List.nth hd 3);
-                            !usr_search.telephone <- (List.nth hd 4)
+                            !usr_search.mail <- (List.nth hd 1);
+                            !usr_search.telephone <- (List.nth hd 0)
                                           
                           end
                           else 
@@ -235,52 +259,24 @@ let search  id_usr =
   match lst with
   | []  ->  () 
   | hd::rst ->begin
-        let sof = { 
-            id = int_of_string (List.nth hd 0) ;
-            nom = (List.nth hd 1); 
+        let tmp = { 
+            id = int_of_string (List.nth hd 4) ;
+            nom = (List.nth hd 3); 
             date_naissance = (List.nth hd 2);
-            mail = (List.nth hd 3);
-            telephone = (List.nth hd 4);
+            mail = (List.nth hd 1);
+            telephone = (List.nth hd 0);
             } in                                             
-                      list_users:= sof::!list_users;
+                      list_users:= tmp::!list_users;
                       generate_lst rst;
               end
 
- let list () =
-   let file = "Inscription.csv" in
-   let entree = open_in file in
-   let rec loop acc = 
-
-     try
-       let ligne = split (input_line entree) ';' in
-       (match ligne with 
-       | [ id; nom; date_naissance; mail; telephone ] ->
-	 let user = {id=(int_of_string id); nom; date_naissance; mail; telephone } in
-	 loop (user :: acc)
-       | _ -> assert false)
-     with 	
-     | End_of_file -> acc
-   in
-   loop []
-
-
- let () =
-   let l = list () in
-   for j = 0 to (List.length l)-1 do
-     print_endline ((List.nth l j).nom)
-   done
-
-(* let list () =  *)
-(*   let file = "Inscription.csv" in  *)
-(*   let list_ligne = lire_file file in *)
-(*   let l = ref list_ligne in generate_lst !l ; *)
-(*   !list_users *)
-(*   (\********************   pour tester que c bien ajouter  ********************\) *)
-(*   (\* for j = 0 to (List.length !list_users)-1 do *\) *)
-(*   (\*   print_endline ((List.nth !list_users j).nom) *\) *)
-(*   (\* done *\) *)
+let list () = 
+  let file = "Inscription.csv" in 
+  let list_ligne = lire_file file in
+  let l = ref list_ligne in generate_lst !l ;
+  !list_users
   
-   
+  
 
 
 (************************************************************************************************************)
@@ -289,7 +285,7 @@ let search  id_usr =
 (************************************************************************************************************)
 
 (* add user 1 *) 
-(* let _ =   write usr1;;  *) 
+(* let _ =   write usr1;;   *)
 
 (* add user 2 *) 
 (* let _ =   write usr2;; *)
@@ -298,14 +294,27 @@ let search  id_usr =
 (* let _ =   write usr3;; *)
 
 (* List users *) 
-(* let _ =   list () ;;  *)
-let _ = 
+ (*  let _ = let t = list() in 
+ for i = 0 to (List.length t)-1 do
+    print_string "Le nom de l'element ";
+    print_int i;
+    print_string " est : ";
+   print_endline (List.nth t i).nom
+ done;;  *)
+
+
+(* let _ = 
   let tab = split "kasdi;hacene;ghersa;sofiane" ';' in 
   print_string " nombre d'element dans le tableau est : "; print_int (List.length tab) ; print_endline ""
- ;;
+ ;; *)
 
 (* delete user 2 *) 
-(* let _ =   delete 2 ;;  *)
+(* let _ =   delete 1 ;;  *)
 
 (* search user " id = 3 " *) 
-(* let _ =   print_endline (search 3).mail ;;  *)
+(* let _ = 
+      print_string "Id :"; print_int (search 1).id;print_endline "" ;
+      print_string "Nom :"; print_endline (search 1).nom;
+      print_string "date_naissance :"; print_endline (search 1).date_naissance;
+      print_string "mail :"; print_endline (search 1).mail;
+      print_string "telephone :"; print_endline (search 1).telephone ;;  *)
