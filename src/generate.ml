@@ -63,10 +63,41 @@ let rec generate_args fmt case =
     else begin
       generation_of_parameter fmt arg.c_lhs.pat_desc ; 
       Format.fprintf fmt " ){\n  " ; 
-
-    (* generate body *)
-      generate_expression fmt arg.c_rhs.exp_desc ; 
-      Format.fprintf fmt "\n }\n"
+                begin
+                   match arg.c_rhs.exp_desc with
+                          | Texp_constant cst -> Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
+                                                                     Format.fprintf fmt ";\n }\n"
+                          | Texp_array ary ->  Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
+                                                                     Format.fprintf fmt "\n }\n"
+                          | Texp_tuple tup ->  Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
+                                                                     Format.fprintf fmt "\n }\n"
+                          | Texp_ident (path,long,typ)    ->  Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
+                                                                     Format.fprintf fmt "\n }\n"
+                          | Texp_construct (long_id,cd,exp_list) ->  Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
+                                                                     Format.fprintf fmt "\n }\n"
+                          | Texp_apply (exp,l_exp) -> begin
+                            let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print_endline";"print_newline"] in
+                                                      match exp.exp_desc with
+                                                      | Texp_ident (path,long,typ) -> begin
+                                                        match path with
+                                                        | Pdot (t,str,i) -> if (List.mem str !tab_print) 
+                                                          then begin 
+                                                                   generate_expression fmt arg.c_rhs.exp_desc ; Format.fprintf fmt "\n }\n";
+                                                               end 
+                                                          else begin  (* uniry operator *)
+                                                            Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
+                                                            Format.fprintf fmt ";\n }\n";
+                                                          end
+                                                        | _ -> begin 
+                                                                   generate_expression fmt arg.c_rhs.exp_desc ; Format.fprintf fmt "\n }\n";
+                                                               end
+                                                      end 
+                                                      | _ -> generate_expression fmt arg.c_rhs.exp_desc ; Format.fprintf fmt "\n }\n";
+                                                        
+                                                        
+                                                    end
+                          | _ -> generate_expression fmt arg.c_rhs.exp_desc ; Format.fprintf fmt "\n }\n" 
+                end;
     end
   | _ -> Format.fprintf fmt "ERROR_generate_args"  
     
@@ -110,11 +141,82 @@ and generate_expression fmt exp_desc =
   | Texp_function (label,case,partial) ->  Format.fprintf fmt " ( "; generate_args fmt case
   | Texp_ifthenelse (cond,trait,alt) -> begin
     Format.fprintf fmt   "if ( " ;generate_expression fmt cond.exp_desc ; 
-    Format.fprintf fmt   " ) {\n return " ;generate_expression fmt trait.exp_desc ; 
-    Format.fprintf fmt   ";\n }" ; 
+    Format.fprintf fmt   " ) {\n " ;
+                begin
+                   match trait.exp_desc with
+                          | Texp_constant cst -> Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc ; 
+                                                 Format.fprintf fmt   ";\n }" 
+                          | Texp_array ary ->  Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc ; 
+                                                 Format.fprintf fmt   ";\n }" 
+                          | Texp_tuple tup ->  Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc ; 
+                                                 Format.fprintf fmt   ";\n }" 
+                          | Texp_ident (path,long,typ)    ->  Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc ; 
+                                                 Format.fprintf fmt   ";\n }" 
+                          | Texp_construct (long_id,cd,exp_list) ->  Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc ; 
+                                                 Format.fprintf fmt   ";\n }" 
+                          | Texp_apply (exp,l_exp) -> begin
+                            let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print_endline";"print_newline"] in
+                                                      match exp.exp_desc with
+                                                      | Texp_ident (path,long,typ) -> begin
+                                                        match path with
+                                                        | Pdot (t,str,i) -> if (List.mem str !tab_print) 
+                                                          then begin 
+                                                                   generate_expression fmt trait.exp_desc  ; Format.fprintf fmt "\n }\n";
+                                                               end 
+                                                          else begin  (* uniry operator *)
+                                                            Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc  ; 
+                                                            Format.fprintf fmt ";\n }\n";
+                                                          end
+                                                        | _ -> begin 
+                                                                   generate_expression fmt trait.exp_desc  ; Format.fprintf fmt "\n }\n";
+                                                               end
+                                                      end 
+                                                      | _ -> generate_expression fmt trait.exp_desc  ; Format.fprintf fmt "\n }\n";
+                                                        
+                                                        
+                                                    end
+                          | _ -> generate_expression fmt trait.exp_desc ;  Format.fprintf fmt   ";\n }" 
+                end;
+         
+    
     match alt with 
-    | Some z-> Format.fprintf fmt "else{\nreturn "; generate_expression fmt z.exp_desc; Format.fprintf fmt   " ;\n }\n"
-    | None -> Format.fprintf fmt   "\n";
+    | Some z-> Format.fprintf fmt "else{\n "; 
+                begin
+                   match z.exp_desc with
+                          | Texp_constant cst -> Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
+                                                 Format.fprintf fmt   ";\n }\n\n" 
+                          | Texp_array ary ->  Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
+                                                 Format.fprintf fmt   ";\n }\n\n" 
+                          | Texp_tuple tup ->  Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
+                                                 Format.fprintf fmt   ";\n }\n\n" 
+                          | Texp_ident (path,long,typ)    ->  Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
+                                                 Format.fprintf fmt   ";\n }\n\n" 
+                          | Texp_construct (long_id,cd,exp_list) ->  Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
+                                                 Format.fprintf fmt   ";\n }\n\n" 
+                          | Texp_apply (exp,l_exp) -> begin
+                            let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print_endline";"print_newline"] in
+                                                      match exp.exp_desc with
+                                                      | Texp_ident (path,long,typ) -> begin
+                                                        match path with
+                                                        | Pdot (t,str,i) -> if (List.mem str !tab_print) 
+                                                          then begin
+                                                            generate_expression fmt z.exp_desc ; Format.fprintf fmt "\n }\n\n"
+                                                          end 
+                                                          else begin  (* uniry operator *)
+                                                            Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
+                                                            Format.fprintf fmt ";\n }\n\n";
+                                                          end
+                                                        | _ -> begin 
+                                                                   generate_expression fmt z.exp_desc ; Format.fprintf fmt "\n }\n\n";
+                                                               end
+                                                      end 
+                                                      | _ -> generate_expression fmt z.exp_desc  ; Format.fprintf fmt "\n }\n\n";
+                                                        
+                                                        
+                                                    end
+                          | _ -> generate_expression fmt z.exp_desc ;  Format.fprintf fmt   ";\n }\n\n" 
+                end;
+    | None -> Format.fprintf fmt   "\n\n";
   end
 
   | Texp_apply (exp,l_exp) -> if (List.length l_exp) = 1 then 
@@ -349,7 +451,8 @@ and generate_predefined_function fmt exp l_exp =
           generate_param fmt (List.nth l_exp 1); Format.fprintf fmt ")\n";
         | "^" -> Format.fprintf fmt " ( "; generate_param fmt (List.nth l_exp 0);Format.fprintf fmt " . ";
           generate_param fmt (List.nth l_exp 1);Format.fprintf fmt ")";
-          
+         | ":=" ->  Format.fprintf fmt " ( "; generate_param fmt (List.nth l_exp 0);Format.fprintf fmt " %c " '=';
+          generate_param fmt (List.nth l_exp 1);Format.fprintf fmt " ) ";
 
         | _ -> Format.fprintf fmt " Not_implemented_yet ";
       end    
