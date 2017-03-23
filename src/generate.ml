@@ -115,7 +115,24 @@ and  generate_array_and_tuple fmt tpl =
       generate_expression fmt (Array.get arr_of_tpl i).exp_desc ; Format.fprintf fmt " , " 
     end
   done
-(* ************************************************************* *)
+
+(* Generate records ***************************************************************************************************************** *)
+ and generate_records fmt rcd=
+ match rcd with
+               | [] -> Format.fprintf fmt   "\n " ; 
+               | hd::[] ->
+                  let (_,lb,exp) = hd in
+                             Format.fprintf fmt "\t \t \'%s\' => " lb.lbl_name ;
+                             generate_expression fmt exp.exp_desc;
+                             Format.fprintf fmt   "\n ";
+               | hd::rst ->
+                  let (_,lb,exp) = hd in  
+                             Format.fprintf fmt "\t \t \'%s\' => " lb.lbl_name ;
+                             generate_expression fmt exp.exp_desc;
+                             Format.fprintf fmt   ",\n ";
+                             generate_records fmt rst;
+               | _ -> Format.fprintf fmt   " " ; 
+(* ********************************************************************************************************************************* *)
 
 (* get a constant *)
 and gen_of_constant = function
@@ -382,7 +399,9 @@ and generate_expression fmt exp_desc =
   | Texp_pack h -> Format.fprintf fmt   "generate_expression--generate_pack"
   | Texp_override _ -> Format.fprintf fmt   "generate_expression--generate_override"
 
-  | Texp_record _ ->  Format.fprintf fmt   "generate_expression--generate_record"
+  | Texp_record (llde,_)-> Format.fprintf fmt   "\n \t[ \n" ;
+                          generate_records fmt llde;
+                          Format.fprintf fmt   " \t] " ;
 
 
 (* generate construct [[E;E;..];[E;E;..];[E;E;..]] *)
@@ -481,9 +500,19 @@ and generate_predefined_function fmt exp l_exp =
   end
   | _ ->  Format.fprintf fmt " generate_Texp_apply_2 "; 
 
-(* ========================================================================= *)
 
-(* generate a List of Texp_construct ++++++++++++++++++++++ *)
+(* generate record type initialization *********************************************)
+
+and generate_init_record fmt lab_decl =
+  for i = 0 to List.length lab_decl -1 do
+  if (i= List.length lab_decl - 1) then 
+  Format.fprintf fmt "\t \'%s\' => NULL \n" (List.nth lab_decl i).ld_name.txt
+  else
+    Format.fprintf fmt "\t \'%s\' => NULL, \n" (List.nth lab_decl i).ld_name.txt
+  done
+
+
+(* generate a List of Texp_construct ++++++++++++++++++++++++++++++++++++++++++++ *)
 and construct_const fmt ex_lst=
   let l = ref ex_lst in
   match !l with
@@ -643,7 +672,20 @@ and generate_structure_item fmt item =
                                 | _ -> generate_expression fmt exp.exp_desc
                             end  
   | Tstr_primitive a -> Format.fprintf fmt " generate_structure_item_primitiv  \n"
-  | Tstr_type e -> Format.fprintf fmt " generate_structure_item_type  \n"
+  
+  | Tstr_type decl -> begin (* list of type_declaration *)
+
+               (* seek for a type of this declaration type *)
+                            match (List.nth decl 0).typ_kind with
+                              | Ttype_abstract -> Format.fprintf fmt " Ttype_abstract \n"
+                              | Ttype_variant constr_decl -> Format.fprintf fmt " Ttype_variant \n"
+                              | Ttype_record lab_decl ->  Format.fprintf fmt "$%s = array( \n"  (List.nth decl 0).typ_name.txt; 
+                                                          generate_init_record fmt lab_decl;
+                                                          Format.fprintf fmt "); \n"
+                              | Ttype_open -> Format.fprintf fmt " Ttype_open \n"
+                        
+                      end
+                      
   | Tstr_typext a -> Format.fprintf fmt " generate_structure_item_typex  \n"
   | Tstr_exception a -> Format.fprintf fmt " generate_structure_item_exeption  \n"
   | Tstr_module a -> Format.fprintf fmt " generate_structure_item_module  \n"
