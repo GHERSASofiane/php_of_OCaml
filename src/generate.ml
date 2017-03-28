@@ -77,6 +77,7 @@ let rec generate_args fmt case =
                                                                      Format.fprintf fmt "\n }\n"
                           | Texp_apply (exp,l_exp) -> begin
                             let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print_endline";"print_newline"] in
+                            let tab_op= ["+";"+.";"-";"-.";"*";"*.";"/";"/.";"<";"<=";">";">=";"=";"==";"<>";"!="] in
                                                       match exp.exp_desc with
                                                       | Texp_ident (path,long,typ) -> begin
                                                         match path with
@@ -84,7 +85,31 @@ let rec generate_args fmt case =
                                                           then begin 
                                                                    generate_expression fmt arg.c_rhs.exp_desc ; Format.fprintf fmt "\n }\n";
                                                                end 
-                                                          else begin  (* uniry operator *)
+                                                          else if (List.mem str tab_op)  then 
+                                                                    begin
+                                                                      Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                    end
+                                                           else  if (List.length l_exp) != 1 then begin
+                                                            match str with
+                                                                | "&&" ->Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "&" -> Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "||" -> Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "mod" ->Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "**" ->Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "^" -> Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | _ -> generate_expression fmt arg.c_rhs.exp_desc  ; 
+                                                                       Format.fprintf fmt ";\n }\n";
+                                                          
+                                                            
+                                                          end
+                                                          else  begin  (* uniry operator *)
                                                             Format.fprintf fmt " return "; generate_expression fmt arg.c_rhs.exp_desc ; 
                                                             Format.fprintf fmt ";\n }\n";
                                                           end
@@ -151,6 +176,8 @@ and gen_of_constant = function
     
 and generate_expression fmt exp_desc = 
   let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print_endline";"print_newline"] in
+  let tab_conv= ["int_of_float";"float_of_int";"int_of_char";"char_of_int";"string_of_bool";"bool_of_string";"int_of_string";"float_of_string";"string_of_int";"string_of_float"] in
+ 
   match exp_desc with
   | Texp_constant cst ->  generate_constant fmt cst 
   | Texp_array ary -> Format.fprintf fmt "array ( " ; generate_array_and_tuple fmt ary ; Format.fprintf fmt ")"
@@ -173,14 +200,40 @@ and generate_expression fmt exp_desc =
                                                  Format.fprintf fmt   ";\n }" 
                           | Texp_apply (exp,l_exp) -> begin
                             let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print_endline";"print_newline"] in
+                            let tab_op= ["+";"+.";"-";"-.";"*";"*.";"/";"/.";"<";"<=";">";">=";"=";"==";"<>";"!="] in
                                                       match exp.exp_desc with
+
                                                       | Texp_ident (path,long,typ) -> begin
                                                         match path with
                                                         | Pdot (t,str,i) -> if (List.mem str !tab_print) 
                                                           then begin 
                                                                    generate_expression fmt trait.exp_desc  ; Format.fprintf fmt "\n }\n";
                                                                end 
-                                                          else begin  (* uniry operator *)
+                                                          else if (List.mem str tab_op)  then 
+                                                                    begin
+                                                                      Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                    end
+                                                           else  if (List.length l_exp) != 1 then begin
+                                                            match str with
+                                                                | "&&" ->Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "&" -> Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "||" -> Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "mod" ->Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "**" ->Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "^" -> Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | _ -> generate_expression fmt trait.exp_desc  ; 
+                                                                       Format.fprintf fmt ";\n }\n";
+                                                          
+                                                            
+                                                          end
+                                                          else  begin  (* uniry operator *)
                                                             Format.fprintf fmt " return "; generate_expression fmt trait.exp_desc  ; 
                                                             Format.fprintf fmt ";\n }\n";
                                                           end
@@ -212,13 +265,37 @@ and generate_expression fmt exp_desc =
                                                  Format.fprintf fmt   ";\n }\n\n" 
                           | Texp_apply (exp,l_exp) -> begin
                             let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print_endline";"print_newline"] in
+                            let tab_op= ["+";"+.";"-";"-.";"*";"*.";"/";"/.";"<";"<=";">";">=";"=";"==";"<>";"!="] in
                                                       match exp.exp_desc with
                                                       | Texp_ident (path,long,typ) -> begin
                                                         match path with
                                                         | Pdot (t,str,i) -> if (List.mem str !tab_print) 
                                                           then begin
                                                             generate_expression fmt z.exp_desc ; Format.fprintf fmt "\n }\n\n"
-                                                          end 
+                                                          end else if (List.mem str tab_op)  then 
+                                                                    begin
+                                                                      Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                    end
+                                                           else if (List.length l_exp) != 1 then begin
+                                                            match str with
+                                                                | "&&" ->Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "&" -> Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "||" -> Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "mod" ->Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "**" ->Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | "^" -> Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
+                                                                         Format.fprintf fmt ";\n }\n\n";
+                                                                | _ -> generate_expression fmt z.exp_desc  ; 
+                                                                       Format.fprintf fmt ";\n }\n";
+                                                          
+                                                            
+                                                          end
                                                           else begin  (* uniry operator *)
                                                             Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
                                                             Format.fprintf fmt ";\n }\n\n";
@@ -258,8 +335,24 @@ and generate_expression fmt exp_desc =
             else begin  (* uniry operator *)
               Format.fprintf fmt "( "; 
               generate_expression fmt exp.exp_desc;
-              generate_param fmt (List.nth l_exp 0);
-              Format.fprintf fmt ")";
+              Format.fprintf fmt "( "; 
+                
+                  match exp.exp_desc with
+                  | Texp_ident (path,long,typ)    -> begin
+                                                        match path with (*  Les fonctions de conversions *) 
+                                                        | Pdot (t,str,i) -> if str = "string_of_bool" then begin
+                                                                               Format.fprintf fmt "\""; generate_param fmt (List.nth l_exp 0); 
+                                                                               Format.fprintf fmt "\""; 
+                                                                            end 
+                                                                            else generate_param fmt (List.nth l_exp 0); Format.fprintf fmt ")"; Format.fprintf fmt ")";
+                                                        | _ -> generate_param fmt (List.nth l_exp 0); Format.fprintf fmt ")"; Format.fprintf fmt ")";
+                                                     end
+                  | _ -> begin
+                          generate_param fmt (List.nth l_exp 0); Format.fprintf fmt ")"; Format.fprintf fmt ")";
+                         end 
+                
+              
+             
             end
           | _ -> begin 
             generate_expression fmt exp.exp_desc;
@@ -274,8 +367,22 @@ and generate_expression fmt exp_desc =
     else generate_predefined_function fmt exp l_exp;
     
     
-  | Texp_ident (path,long,typ)    -> generate_path fmt path
+  | Texp_ident (path,long,typ)    -> begin
+                                        match path with (*  Les fonctions de conversions *) 
+                                        | Pdot (t,str,i) ->  if (List.mem str tab_conv)  then  
+                                                                begin
+                                                                  if str = "int_of_char" then Format.fprintf fmt "ord" 
+                                                                  else if str = "int_of_float" then Format.fprintf fmt "intval" 
+                                                                  else if str = "char_of_int" then Format.fprintf fmt "chr"  
+                                                                  else if str = "bool_of_string" then Format.fprintf fmt "(bool)" 
+                                                                  else Format.fprintf fmt "";
+                                                                end
+                                                              else generate_path fmt path
+                                        | _ -> generate_path fmt path
+                                    end 
+  
     
+     
   (* ===================================   generate a constructor ================================================================= *)
   | Texp_construct (long_id,cd,exp_list) -> 
     let vv = cd.cstr_name in
@@ -356,7 +463,7 @@ and generate_expression fmt exp_desc =
   | Texp_let (rec_flag,val_binds,exp) -> 
     begin 
       match rec_flag with
-      | Nonrecursive -> List.iter (generate_value_binding fmt) val_binds
+      | Nonrecursive -> List.iter (generate_value_binding fmt) val_binds 
       | Recursive -> 
         begin
            (* in order to update the list  *)
@@ -414,7 +521,7 @@ and generate_construct fmt tab =
 
  (* ************************** generate Path.t ************************** *)
 and generate_path fmt path =
-  begin
+   begin
     match path with
     | Pident ident_t ->
                             (* if the function name exits in the list *)
@@ -431,7 +538,8 @@ and generate_path fmt path =
         Format.fprintf fmt " %c " str.[0] 
       else if (String.length str) > 1 && str.[1]='-' then
         Format.fprintf fmt " %c " str.[1]
-      else if str = "ref" then Format.fprintf fmt "" else Format.fprintf fmt " %s " str
+      else if str = "ref" then Format.fprintf fmt "" else 
+      if str = "not" then Format.fprintf fmt " ! "   else Format.fprintf fmt " %s " str
 
     | Papply (t_1,t_2) -> Format.fprintf fmt " == Papply (regarde dans /typing/path.ml)"
     | _-> Format.fprintf fmt "error_generate_path \n"
@@ -450,7 +558,7 @@ and generate_predefined_function fmt exp l_exp =
           generate_operateur fmt str;
           generate_param fmt (List.nth l_exp 1);Format.fprintf fmt " )";
         end
-          
+       
       else begin
                 (*************************** traitement sur les operateur binaire  *)
         match str with
@@ -557,7 +665,13 @@ and generate_param fmt param_op =
   | None -> Format.fprintf fmt ""
     
     
-    
+and gen_multiple_let fmt exp loc=
+  begin                            
+       match exp.exp_desc with
+       |  Texp_let (rec_flag,val_binds,exp) -> List.iter (generate_value_binding fmt) val_binds; gen_multiple_let fmt exp loc
+       | _ -> Format.fprintf fmt " $%s = %a ;\n"  loc.txt  generate_expression exp.exp_desc
+  end  
+
     
 (* Generate Value Binding    *************************************************************************************************** *)
     
@@ -574,8 +688,12 @@ and generate_value_binding fmt value_binding =
                                       Format.fprintf fmt "function %s%a\n"  loc.txt  generate_expression vb_expr.exp_desc ;
 
                                 end 
+                               | Texp_let (rec_flag,val_binds,exp) -> List.iter (generate_value_binding fmt) val_binds;
+                                                                      gen_multiple_let fmt exp loc;
                                
-                                | _ ->  Format.fprintf fmt "$%s = %a;\n"  loc.txt  generate_expression vb_expr.exp_desc (*  pour les vergule en ref *)
+                                | _ -> Format.fprintf fmt " $%s = %a ;\n"  loc.txt  generate_expression vb_expr.exp_desc
+                             
+                                (*  pour les vergule en ref *)
                              end
   | Tpat_any -> Format.fprintf fmt "generate_value_binding_any \n"
   | Tpat_alias (a,b,c) -> Format.fprintf fmt " generate_value_binding_alias \n"
@@ -617,11 +735,12 @@ and generate_structure_item fmt item =
   match str_desc with
   | Tstr_value (rec_flag, val_binds) -> begin 
                                            match rec_flag with
-                                           | Nonrecursive -> List.iter (generate_value_binding fmt) val_binds
+                                           | Nonrecursive -> List.iter (generate_value_binding fmt) val_binds 
                                            | Recursive -> 
                                            begin
                                             (* in order to update the list  *)
                                             l:= [];
+                                           
                                            List.iter (generate_value_binding fmt) val_binds ;
                                            end (* Format.fprintf fmt "rec here \n" *)
                                         end 

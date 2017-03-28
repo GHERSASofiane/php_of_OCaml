@@ -22,3 +22,6 @@ let add x y =   x +y  ;;
 let affiche x =  print_string " l'argument que vous avez entre est : ";  print_endline x ;;
 
 let rr = add 4 5;;
+
+let add x y = if true then  x :=  max 5 6 else  y :=   min 7 9 ;;
+

@@ -4,8 +4,6 @@ not true ;;
 true  &&  false;; 
 true  &&  false;; 
 true  || false;;  
-succ 10;; (* ++10  *)
-pred 10;; (* --10  *)
 10 mod 5 ;;
 abs (-20);;
 4. ** 2. ;;
@@ -17,20 +15,9 @@ log 2. ;;
 log10 2. ;;
 sqrt 2. ;;
 exp 2. ;;
+
 (* 
-expm1
-log1p
-cos
-sin
-tan
-acos
-asin
-atan
-atan2
-hypot
-cosh
-sinh
-tanh
+
 ceil
 floor
 abs_float
