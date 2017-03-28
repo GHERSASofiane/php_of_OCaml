@@ -132,7 +132,7 @@ and  generate_array_and_tuple fmt tpl =
   let taille = Array.length arr_of_tpl - 1 in
   for i = 0 to taille  do 
     if i == taille then begin
-			(* (...,E) the last element*)
+      (* (...,E) the last element*)
       generate_expression fmt (Array.get arr_of_tpl taille).exp_desc  
     end  
     else begin
@@ -392,18 +392,18 @@ and generate_expression fmt exp_desc =
         let p = cd.cstr_res.desc in 
         match p with
         | Tconstr (path,typ_exp_lst,abrv_mem)-> 
-	  let idnt = path in 
-	  begin
-	    match idnt with
-	    | Pident ident_t -> 
-	      begin
-		let x = ident_t.name in
+    let idnt = path in 
+    begin
+      match idnt with
+      | Pident ident_t -> 
+        begin
+    let x = ident_t.name in
 
     (* in case of function without parameters *)
-		if x = "unit" then Format.fprintf fmt "()\n" else 
+    if x = "unit" then Format.fprintf fmt "()\n" else 
 
     (* in case of construct *)
-		  if x = "list" then
+      if x = "list" then
 
                                                     if !is_prem = true then begin
                                                       is_prem := false;
@@ -417,7 +417,7 @@ and generate_expression fmt exp_desc =
                                                   end
                                                    
                                                     
-		                                               (*  if !is_prem = true then begin
+                                                   (*  if !is_prem = true then begin
                                                         is_prem := not !is_prem;
                                                         Format.fprintf fmt "Array ( "; 
                                                         generate_construct fmt exp_list;
@@ -431,11 +431,11 @@ and generate_expression fmt exp_desc =
                                                       end
                                                       
                                                     end *)
-		      
-		      
-	      end
-	    | _ -> Format.fprintf fmt "Cunstruct Path.t error";
-	  end
+          
+          
+        end
+      | _ -> Format.fprintf fmt "Cunstruct Path.t error";
+    end
         | _ -> Format.fprintf fmt " construct_description ERROR"
       end     
 
@@ -532,7 +532,12 @@ and generate_path fmt path =
         end
       else
         begin
-          Format.fprintf fmt " $%s " ident_t.name ;
+          (********* rename variables ************************************)
+          let strVar = (string_of_int ident_t.stamp) in
+          let strt = (String.length strVar)-2 in 
+          let nm = String.sub (string_of_int ident_t.stamp) strt 2 in
+          let varname=ident_t.name^nm in
+          Format.fprintf fmt " $%s " varname;
         end
     | Pdot (t,str,i) -> if (String.length str) > 1 && str.[1]='.'  then 
         Format.fprintf fmt " %c " str.[0] 
@@ -609,15 +614,15 @@ and generate_predefined_function fmt exp l_exp =
   | _ ->  Format.fprintf fmt " generate_Texp_apply_2 "; 
 
 
-(* generate record type initialization *********************************************)
+(* WE WON'T INITIALIZE THE RECORD TYPE IN PHP **************************************)
 
-and generate_init_record fmt lab_decl =
+(* and generate_init_record fmt lab_decl =
   for i = 0 to List.length lab_decl -1 do
   if (i= List.length lab_decl - 1) then 
   Format.fprintf fmt "\t \'%s\' => NULL \n" (List.nth lab_decl i).ld_name.txt
   else
     Format.fprintf fmt "\t \'%s\' => NULL, \n" (List.nth lab_decl i).ld_name.txt
-  done
+  done *)
 
 
 (* generate a List of Texp_construct ++++++++++++++++++++++++++++++++++++++++++++ *)
@@ -665,12 +670,16 @@ and generate_param fmt param_op =
   | None -> Format.fprintf fmt ""
     
     
-and gen_multiple_let fmt exp loc=
+and gen_multiple_let fmt exp loc varname=
   begin                            
        match exp.exp_desc with
-       |  Texp_let (rec_flag,val_binds,exp) -> List.iter (generate_value_binding fmt) val_binds; gen_multiple_let fmt exp loc
-       | _ -> Format.fprintf fmt " $%s = %a ;\n"  loc.txt  generate_expression exp.exp_desc
-  end  
+       |  Texp_let (rec_flag,val_binds,exp) -> (* ... LET Y= E IN ... *)
+                                               List.iter (generate_value_binding fmt) val_binds; 
+                                               (* ... IN (THE REST)...*)
+                                               gen_multiple_let fmt exp loc varname
+       | _ ->
+       Format.fprintf fmt " $%s = %a ; \n \n"  varname generate_expression exp.exp_desc
+  end 
 
     
 (* Generate Value Binding    *************************************************************************************************** *)
@@ -688,12 +697,27 @@ and generate_value_binding fmt value_binding =
                                       Format.fprintf fmt "function %s%a\n"  loc.txt  generate_expression vb_expr.exp_desc ;
 
                                 end 
-                               | Texp_let (rec_flag,val_binds,exp) -> List.iter (generate_value_binding fmt) val_binds;
-                                                                      gen_multiple_let fmt exp loc;
                                
-                                | _ -> Format.fprintf fmt " $%s = %a ;\n"  loc.txt  generate_expression vb_expr.exp_desc
-                             
-                                (*  pour les vergule en ref *)
+                                | _ -> 
+                                begin
+                                match vb_expr.exp_desc with
+                                | Texp_let (rec_flag,val_binds,exp) -> 
+                                begin
+                    let strVar =(string_of_int ident.stamp) in
+                    let strt = (String.length strVar)-2 in 
+                    let nm = String.sub (string_of_int ident.stamp) strt 2 in
+                    let varname=loc.txt^nm in
+                    (* LET X = LET Y = E IN ... *) 
+                    gen_multiple_let fmt vb_expr loc varname;  
+                                end
+                                | _ -> 
+                    let strVar = (string_of_int ident.stamp) in
+                    let strt = (String.length strVar)-2 in 
+                    let nm = String.sub (string_of_int ident.stamp) strt 2 in
+                    let varname=loc.txt^nm in
+                    (* LET X = E *)
+                    Format.fprintf fmt " $%s = %a ;\n" varname  generate_expression vb_expr.exp_desc
+                                end  
                              end
   | Tpat_any -> Format.fprintf fmt "generate_value_binding_any \n"
   | Tpat_alias (a,b,c) -> Format.fprintf fmt " generate_value_binding_alias \n"
@@ -798,9 +822,7 @@ and generate_structure_item fmt item =
                             match (List.nth decl 0).typ_kind with
                               | Ttype_abstract -> Format.fprintf fmt " Ttype_abstract \n"
                               | Ttype_variant constr_decl -> Format.fprintf fmt " Ttype_variant \n"
-                              | Ttype_record lab_decl ->  Format.fprintf fmt "$%s = array( \n"  (List.nth decl 0).typ_name.txt; 
-                                                          generate_init_record fmt lab_decl;
-                                                          Format.fprintf fmt "); \n"
+                              | Ttype_record lab_decl ->  Format.fprintf fmt "" ; (*** EMPTY ***)
                               | Ttype_open -> Format.fprintf fmt " Ttype_open \n"
                         
                       end
