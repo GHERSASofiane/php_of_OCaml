@@ -21,6 +21,7 @@ exception Not_implemented_yet of string
 (* initialize a list to store function names *)
 let l = ref []
 let is_prem = ref true 
+let is_concat = ref false 
 (* let varTable = [] *)
 
 (* Generate Constant   ******************************************************************************************************* *)
@@ -240,14 +241,14 @@ and generate_expression fmt exp_desc =
                                                             Format.fprintf fmt ";\n }\n";
                                                           end
                                                         | _ -> begin 
-                                                                   generate_expression fmt trait.exp_desc  ; Format.fprintf fmt "\n }\n";
+                                                                   generate_expression fmt trait.exp_desc  ; Format.fprintf fmt ";\n }\n";
                                                                end
                                                       end 
                                                       | _ -> generate_expression fmt trait.exp_desc  ; Format.fprintf fmt "\n }\n";
                                                         
                                                         
                                                     end
-                          | _ -> generate_expression fmt trait.exp_desc ;  Format.fprintf fmt   ";\n }" 
+                          | _ -> generate_expression fmt trait.exp_desc ;  Format.fprintf fmt   "\n }" 
                 end;
          
     
@@ -293,7 +294,7 @@ and generate_expression fmt exp_desc =
                                       | "^" -> Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
                                                Format.fprintf fmt ";\n }\n\n";
                                       | _ -> generate_expression fmt z.exp_desc  ; 
-                                             Format.fprintf fmt ";\n }\n";
+                                             Format.fprintf fmt "\n }\n";
                                 
                                   
                                 end
@@ -302,7 +303,7 @@ and generate_expression fmt exp_desc =
                                   Format.fprintf fmt ";\n }\n\n";
                                 end
                               | _ -> begin 
-                                         generate_expression fmt z.exp_desc ; Format.fprintf fmt "\n }\n\n";
+                                         generate_expression fmt z.exp_desc ; Format.fprintf fmt ";\n }\n\n";
                                      end
                             end 
                             | _ -> generate_expression fmt z.exp_desc  ; Format.fprintf fmt "\n }\n\n";
@@ -314,12 +315,13 @@ and generate_expression fmt exp_desc =
     | None -> Format.fprintf fmt   "\n\n";
   end
 
-  | Texp_apply (exp,l_exp) -> if (List.length l_exp) = 1 then 
-      begin
+  | Texp_apply (exp,l_exp) ->  if (List.length l_exp) = 1 then 
+      begin 
         match exp.exp_desc with
         | Texp_ident (path,long,typ) -> begin
           match path with
-          | Pdot (t,str,i) -> if (List.mem str !tab_print) 
+          | Pdot (t,str,i) -> 
+          if (List.mem str !tab_print) 
             then begin (* echo *) 
               Format.fprintf fmt "echo  ";
               Format.fprintf fmt " ( ";
@@ -340,12 +342,46 @@ and generate_expression fmt exp_desc =
                 
                   match exp.exp_desc with
                   | Texp_ident (path,long,typ)    -> begin
+
                                                         match path with (*  Les fonctions de conversions *) 
-                                                        | Pdot (t,str,i) -> if str = "string_of_bool" then begin
+                                                        | Pdot (t,str,i) -> 
+
+                                                        if str = "string_of_bool" then begin
                                                                                Format.fprintf fmt "\""; generate_param fmt (List.nth l_exp 0); 
                                                                                Format.fprintf fmt "\""; 
                                                                             end 
-                                                                            else generate_param fmt (List.nth l_exp 0); Format.fprintf fmt ")"; Format.fprintf fmt ")";
+                                                                            else 
+                                                                            begin
+                                                                                
+                                                  match exp.exp_desc with
+                                                  | Texp_ident (path,long,typ)    -> begin
+                                                                                          match path with (*  Les fonctions de conversions *) 
+                                                                                          | Pdot (t,str,i) -> begin
+                                                                                            (* ///////////////////////////////////////////////////////////////////// *)
+                                                                                                                  if str = "open_in" then
+                                                                                                                       begin
+                                                                                                                          generate_param fmt (List.nth l_exp 0);
+                                                                                                                           Format.fprintf fmt " , \"r\" )"; Format.fprintf fmt ")";
+                                                                                                                       end
+                                                                                                                  else if str = "open_out" then
+                                                                                                                       begin
+                                                                                                                          generate_param fmt (List.nth l_exp 0);
+                                                                                                                           Format.fprintf fmt " , \"w\" )"; Format.fprintf fmt ")";
+                                                                                                                       end
+                                                                                                                  else
+                                                                                                                  
+                                                                                                                       begin
+                                                                                                                          generate_param fmt (List.nth l_exp 0);
+                                                                                                                           Format.fprintf fmt ")"; Format.fprintf fmt ")";
+                                                                                                                       end
+                                                                                                              end   
+                                                                                          | _ -> generate_param fmt (List.nth l_exp 0); Format.fprintf fmt ")"; Format.fprintf fmt ")";
+                                                                                     end
+ 
+                                                  | _ -> generate_param fmt (List.nth l_exp 0); Format.fprintf fmt ")"; Format.fprintf fmt ")";
+                                                          
+                                                  
+                                                                            end 
                                                         | _ -> generate_param fmt (List.nth l_exp 0); Format.fprintf fmt ")"; Format.fprintf fmt ")";
                                                      end
                   | _ -> begin
@@ -365,13 +401,16 @@ and generate_expression fmt exp_desc =
           
       end
         
-    else generate_predefined_function fmt exp l_exp;
+    else begin
+      generate_predefined_function fmt exp l_exp;
+    end 
     
     
   | Texp_ident (path,long,typ)    -> begin
                                         match path with (*  Les fonctions de conversions *) 
                                         | Pdot (t,str,i) ->  if (List.mem str !tab_conv)  then  
                                                                 begin
+
                                                                   if str = "int_of_char" then Format.fprintf fmt "ord" 
                                                                   else if str = "int_of_float" then Format.fprintf fmt "intval" 
                                                                   else if str = "char_of_int" then Format.fprintf fmt "chr"  
@@ -381,6 +420,7 @@ and generate_expression fmt exp_desc =
                                                                 end
                                                               else generate_path fmt path
                                         | _ -> generate_path fmt path
+                                        
                                     end 
   
     
@@ -413,6 +453,17 @@ and generate_expression fmt exp_desc =
                                                       end else
                                                       if cd.cstr_name = "[]" then
                                                       Format.fprintf fmt "" else  
+                                                      if cd.cstr_name = "::" && !is_concat then 
+                                                          begin
+                                                            is_concat := false;
+                                                            (* ///////////////////////////////////////////////////////////////////// *)
+                                                             Format.fprintf fmt " array_unshift ( ";
+                                                             generate_expression fmt (List.nth exp_list 1).exp_desc;
+                                                             Format.fprintf fmt " , ";
+                                                             generate_expression fmt (List.nth exp_list 0).exp_desc;
+                                                             Format.fprintf fmt " ) "
+                                                           end 
+                                                    else
                                                   begin
                                                      Format.fprintf fmt " , ";
                                                      generate_construct fmt exp_list
@@ -524,12 +575,17 @@ and generate_path fmt path =
           let varname=ident_t.name in
           Format.fprintf fmt " $%s " varname;
         end
+        (* ///////////////////////////////////////////////////////////////////// *)
     | Pdot (t,str,i) -> if (String.length str) > 1 && str.[1]='.'  then 
         Format.fprintf fmt " %c " str.[0] 
       else if (String.length str) > 1 && str.[1]='-' then
         Format.fprintf fmt " %c " str.[1]
       else if str = "ref" then Format.fprintf fmt "" else 
-      if str = "not" then Format.fprintf fmt " ! "   else Format.fprintf fmt " %s " str
+      if str = "not" then Format.fprintf fmt " ! "   else 
+      if str = "length" then Format.fprintf fmt " strlen "   else
+      if str = "open_in" then Format.fprintf fmt " fopen "   else
+      if str = "open_out" then Format.fprintf fmt " fopen "   else
+      if str = "!" then Format.fprintf fmt "  "   else Format.fprintf fmt " %s " str
 
     | Papply (t_1,t_2) -> Format.fprintf fmt " == Papply (regarde dans /typing/path.ml)"
     | _-> Format.fprintf fmt "error_generate_path \n"
@@ -568,9 +624,26 @@ and generate_predefined_function fmt exp l_exp =
           generate_param fmt (List.nth l_exp 1); Format.fprintf fmt ")\n";
         | "^" -> Format.fprintf fmt " ( "; generate_param fmt (List.nth l_exp 0);Format.fprintf fmt " . ";
           generate_param fmt (List.nth l_exp 1);Format.fprintf fmt ") ";
-         | ":=" ->  Format.fprintf fmt " ( "; generate_param fmt (List.nth l_exp 0);Format.fprintf fmt " %c " '=';
-          generate_param fmt (List.nth l_exp 1);Format.fprintf fmt " ) ";
+(* ///////////////////////////////////////////////////////////////////// *)
+        | ":=" -> 
+        begin
+          let (lab,exp,op) = (List.nth l_exp 1) in
+           match exp with
+          | Some b -> 
+          begin
+             match b.exp_desc with
+          | Texp_construct (a,b,c)->  generate_param fmt (List.nth l_exp 1);Format.fprintf fmt " ;\n ";  
+                                    
+          | _ -> Format.fprintf fmt " ( "; generate_param fmt (List.nth l_exp 0);Format.fprintf fmt " %c " '=';
+          generate_param fmt (List.nth l_exp 1);Format.fprintf fmt " );\n ";
+          end 
+          | None -> Format.fprintf fmt ""
 
+        end 
+        | "get" -> Format.fprintf fmt " ( "; generate_param fmt (List.nth l_exp 0);Format.fprintf fmt " [ ";
+          generate_param fmt (List.nth l_exp 1);Format.fprintf fmt " ] ) ";
+        | "make" -> Format.fprintf fmt " ( "; generate_param fmt (List.nth l_exp 1);Format.fprintf fmt " ) ";
+          
         | _ -> Format.fprintf fmt " Not_implemented_yet 00 ";
       end    
     end 
@@ -647,7 +720,13 @@ and generate_operateur fmt str=
 and generate_param fmt param_op =
   let (lab,exp,op) = param_op in
   match exp with
-  | Some b -> generate_expression fmt b.exp_desc
+  | Some b -> begin
+    (* ///////////////////////////////////////////////////////////////////// *)
+                  match b.exp_desc with
+                  | Texp_apply (exp,l_exp) -> generate_expression fmt b.exp_desc; is_concat := true
+                  | _ -> generate_expression fmt b.exp_desc
+              end
+                                        
   | None -> Format.fprintf fmt ""
     
 
@@ -855,6 +934,7 @@ and generate_value_binding fmt value_binding =
                         begin
                           if cd.cstr_name = "[]" then Format.fprintf fmt " " else 
                           begin
+                            (* ///////////////////////////////////////////////////////////////////// *)
                             is_prem := true;
                             Format.fprintf fmt " , ";
                             Format.fprintf fmt "array (";

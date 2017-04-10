@@ -17,3 +17,8 @@ let x_7 =float_of_string "13.37";;(* oui *)
 
 let x_8 = string_of_float 13.37;;(* oui *) 
 
+
+let x = 5 ;;
+let x = 10;;
+let y = 5 + x;;
+print_int y ;;
