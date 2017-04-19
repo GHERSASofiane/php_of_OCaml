@@ -1,4 +1,6 @@
+(* let x = ref [] *)
 
+(* 
 
 let tup_1_elem = ( 88)
 let tup_2_elem = ( 'a', "ocaml")
@@ -66,3 +68,4 @@ let rec func_rec_avec_deux_args a b = if a < b then func_rec_avec_deux_args a (b
 let rec func_rec_avec_trois_args a b c = if a < c then a else func_rec_avec_trois_args a (b-1) (c*10)
 
 
+ *)

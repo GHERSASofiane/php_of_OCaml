@@ -78,7 +78,8 @@ let lire_file file =
                           ligne := (split (input_line entree) ';' ) 
                       done
         with
-          | End_of_file -> close_in entree
+          | End_of_file -> close_in entree 
+          (* fclose($file); *)
   end;
   
   !result
@@ -146,7 +147,7 @@ let write usr =
   
   let x = usr.telephone^";"^usr.mail^";"^usr.date_naissance^";"^usr.nom^";"^id in
 
-  let u = (split x ';' )  in add u;
+  let u = (split x ';' )  in add (u);
 
 
   buf:= !sNew::!buf ;
