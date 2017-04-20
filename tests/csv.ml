@@ -72,7 +72,7 @@ let lire_file file =
             let nb_champs = (List.length !ligne) in
             while true do
                       if (List.length !ligne) != nb_champs then
-                          print_endline "Erreur de lecteur" 
+                          print_endline "Erreur de lecture" 
                       else
                           result := List.append !result [ !ligne ];
                           ligne := (split (input_line entree) ';' ) 

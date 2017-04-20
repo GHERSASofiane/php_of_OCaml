@@ -44,3 +44,5 @@ let x = let y = 4 in let z = 6 in let o = y + z in print_int o ;;
 
 (* CONVERT INT TO STRING IN TEXP_APPLY *)
 let u = let x = 4 in let o = string_of_int x in let z = "we have " in z ^ o ;;
+let addme x y = let z = x + y in z;;
+let mult x y = let z = x + y in z*2;;
