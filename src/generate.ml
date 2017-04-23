@@ -23,6 +23,20 @@ let l = ref []
 let is_prem = ref true 
 let is_concat = ref false 
 
+let pvEnd = ref false
+let pvEnd2= ref false
+let pvEnd3 = ref false
+
+let boolApply = ref false
+let boolLet = ref false
+
+let alterP = ref false
+let alterP2 = ref false
+let dotBool = ref false
+let pidentBool=ref false
+let fromPatVar = ref false
+let paramBool = ref false
+
 let unitFunc = ref false
 let temp = ref 0
 let data = ref 0
@@ -248,10 +262,10 @@ and generate_expression fmt exp_desc =
                                                             Format.fprintf fmt ";\n }\n";
                                                           end
                                                         | _ -> begin 
-                                                                   generate_expression fmt trait.exp_desc  ; Format.fprintf fmt ";\n }\n";
+                                                                   generate_expression fmt trait.exp_desc  ; Format.fprintf fmt ")°°°;\n }\n";
                                                                end
                                                       end 
-                                                      | _ -> generate_expression fmt trait.exp_desc  ; Format.fprintf fmt "\n }\n";
+                                                      | _ -> generate_expression fmt trait.exp_desc  ; Format.fprintf fmt "°°°°\n }\n";
                                                         
                                                         
                                                     end
@@ -310,7 +324,9 @@ and generate_expression fmt exp_desc =
                                   Format.fprintf fmt ";\n }\n\n";
                                 end
                               | _ -> begin 
-                                         generate_expression fmt z.exp_desc ; Format.fprintf fmt ";\n }\n\n";
+                                         generate_expression fmt z.exp_desc ; 
+                                        if(!paramBool) then paramBool :=false else
+                                         Format.fprintf fmt ")+++++;\n }\n\n";
                                      end
                             end 
                             | _ -> generate_expression fmt z.exp_desc  ; Format.fprintf fmt "\n }\n\n";
@@ -323,6 +339,8 @@ and generate_expression fmt exp_desc =
   end
 
   | Texp_apply (exp,l_exp) ->
+  (* Format.fprintf fmt "apply ===> " ; *)
+  (* fromApply:=true; *)
    if (List.length l_exp) = 1 then 
       begin 
         match exp.exp_desc with
@@ -410,8 +428,19 @@ and generate_expression fmt exp_desc =
                                                                                                                   
                                                                                                                   
                                                                                                                        begin
+                                                                                                                          alterP:=true;
                                                                                                                           generate_param fmt (List.nth l_exp 0);
-                                                                                                                           Format.fprintf fmt ")"; (* Format.fprintf fmt " '''"; *)
+                                                                                                                          if(!alterP2) then
+                                                                                                                          begin
+                                                                                                                           Format.fprintf fmt ");\n"; (* Format.fprintf fmt " '''"; *)
+                                                                                                                        alterP:=false;
+                                                                                                                        alterP2:=false;
+                                                                                                                          end
+                                                                                                                            else
+                                                                                                                            begin
+                                                                                                                              Format.fprintf fmt ")"
+                                                                                                                            end
+
                                                                                                                        end
                                                                                                               end   
                                                                                           | _ -> generate_param fmt (List.nth l_exp 0); Format.fprintf fmt ")"; Format.fprintf fmt ")";
@@ -430,16 +459,21 @@ and generate_expression fmt exp_desc =
               
              
             end
-          | _ -> begin 
+          | _ -> begin
+
           (* CALL REC FUNCTIONS *)
             generate_expression fmt exp.exp_desc;
+            boolApply:=true;
+            pvEnd2:=true;
             generate_param fmt (List.nth l_exp 0); 
+            
           end
         end 
         | _ -> Format.fprintf fmt " a_traite_en_generate_expression_Texp_apply_2  ";
         
         end  
     else begin
+      (* Format.fprintf fmt "IIII"; *)
       generate_predefined_function fmt exp l_exp;
     end 
     
@@ -517,7 +551,7 @@ and generate_expression fmt exp_desc =
                                                            end 
                                                     else
                                                   begin
-                                                     Format.fprintf fmt " , ";
+                                                     Format.fprintf fmt "," ;
                                                      generate_construct fmt exp_list
                                                   end
                                                    
@@ -548,7 +582,9 @@ and generate_expression fmt exp_desc =
     Format.fprintf fmt ") \n \t { \n \t \t";
     generate_expression fmt body.exp_desc;
     Format.fprintf fmt "\t }\n";         
-  | Texp_let (rec_flag,val_binds,exp) -> 
+  | Texp_let (rec_flag,val_binds,exp) ->
+  boolLet:=true;
+  (* Format.fprintf fmt "let ===> " ; *)
     begin 
       match rec_flag with
       | Nonrecursive -> List.iter (generate_value_binding fmt) val_binds 
@@ -678,11 +714,13 @@ end
 
    | Texp_try (a,b) -> 
 Format.fprintf fmt   "\n \t try{ \n ";
+  (* Format.fprintf fmt   "###"; *)
   generate_expression fmt a.exp_desc;
+    (* Format.fprintf fmt   "###"; *)
   for i = 0 to List.length b -1 do
     
                                                                       Format.fprintf fmt "\n \t ";
-                                                                        
+                                                                        (* Format.fprintf fmt   "<###>"; *)
                                                                       generate_expression fmt (List.nth b i).c_rhs.exp_desc;
                                                                       Format.fprintf fmt "\n"
   done;
@@ -763,6 +801,7 @@ and generate_path fmt path =
       then 
         begin
           unitFunc :=true;
+
           Format.fprintf fmt "\t%s " ident_t.name;
         end
       else
@@ -772,7 +811,34 @@ and generate_path fmt path =
           let strt = (String.length strVar)-2 in 
           let nm = String.sub (string_of_int ident_t.stamp) strt 2 in
           let varname=ident_t.name in
-          Format.fprintf fmt "$%s " varname;
+          if(!pvEnd && !pvEnd2 && !pvEnd3) then
+          begin
+            if (!boolLet && !boolApply) then
+            begin
+          Format.fprintf fmt "($%s)" varname;
+          pvEnd3:=false; pvEnd2:=false; pvEnd:=false;
+          boolLet:=false;boolApply:=false;
+            end
+          else
+            if ((not !boolLet) && !boolApply) then 
+            begin
+              if (!alterP) then
+              begin
+                alterP2:=true;
+          Format.fprintf fmt "($%s)" varname;
+          pvEnd3:=false; pvEnd2:=false; pvEnd:=false;
+          boolLet:=false;boolApply:=false;
+              end
+                else
+                begin
+          Format.fprintf fmt "($%s);\n" varname;
+          pvEnd3:=false; pvEnd2:=false; pvEnd:=false;
+          boolLet:=false;boolApply:=false;
+              end
+            end
+          end
+        else
+          Format.fprintf fmt "$%s " varname
         end
         (* ///////////////////////////////////////////////////////////////////// *)
     | Pdot (t,str,i) -> if (String.length str) > 1 && str.[1]='.'  then 
@@ -807,7 +873,9 @@ and generate_predefined_function fmt exp l_exp =
         end
        
       else begin
+
                 (*************************** traitement sur les operateur binaire  *)
+                dotBool:=true;
         match str with
         | "min" -> Format.fprintf fmt " min("; generate_param fmt (List.nth l_exp 0);
           Format.fprintf fmt " , "; generate_param fmt (List.nth l_exp 1); Format.fprintf fmt " )";
@@ -823,8 +891,8 @@ and generate_predefined_function fmt exp l_exp =
           generate_param fmt (List.nth l_exp 1);Format.fprintf fmt ")\n";
         | "**" ->Format.fprintf fmt "pow(";generate_param fmt (List.nth l_exp 0);Format.fprintf fmt ",";
           generate_param fmt (List.nth l_exp 1); Format.fprintf fmt ")\n";
-        | "^" -> Format.fprintf fmt " ("; generate_param fmt (List.nth l_exp 0);Format.fprintf fmt ".";
-          generate_param fmt (List.nth l_exp 1);Format.fprintf fmt ") ";
+        | "^" -> Format.fprintf fmt "("; generate_param fmt (List.nth l_exp 0);Format.fprintf fmt ".";
+          generate_param fmt (List.nth l_exp 1);Format.fprintf fmt ") "; 
 (* ///////////////////////////////////////////////////////////////////// *)
         | ":=" ->
         begin
@@ -843,7 +911,7 @@ and generate_predefined_function fmt exp l_exp =
                                                           | Texp_construct (long_id,cd,exp_list) -> if cd.cstr_name = "[]" then begin
                                                                                                                                   generate_param fmt (List.nth l_exp 0);Format.fprintf fmt " = array ()"
                                                                                                                                 end
-                                                                                                    else  generate_param fmt (List.nth l_exp 1);Format.fprintf fmt " ;\n ";
+                                                                                                    else  generate_param fmt (List.nth l_exp 1);Format.fprintf fmt ";\n ";
                                                           | _ ->  generate_param fmt (List.nth l_exp 1);Format.fprintf fmt " ;\n ";
                                                       end
                                                                                
@@ -887,21 +955,56 @@ and generate_predefined_function fmt exp l_exp =
   (* ERROOR *)
     end 
     | Pident ident_t -> begin
+      (* Format.fprintf fmt "???"; *)
+
       let taille_l_exp = (List.length l_exp) in
-      Format.fprintf fmt "%s(" ident_t.name;
+      Format.fprintf fmt "%s" ident_t.name;
       
       if taille_l_exp > 1 then 
         begin
-          for i = 0 to taille_l_exp - 2 do
-            generate_param fmt (List.nth l_exp i);
-            Format.fprintf fmt ",";
-          done;
-          generate_param fmt (List.nth l_exp (taille_l_exp - 1));
+        pidentBool:=true;
+          paramBool :=true;
+          Format.fprintf fmt "(";
+          
+        for i = 0 to taille_l_exp- 1 do
+        if(List.length l_exp-1 = i) then
+          generate_param fmt (List.nth l_exp i)
+      else
+      begin
+        generate_param fmt (List.nth l_exp i);
+        Format.fprintf fmt "," ;
+      end
+        done;
+
+        if(!fromPatVar && !pidentBool) then
+        begin
+          if(!dotBool) then 
+          begin
+        Format.fprintf fmt ");\n";
+        fromPatVar:=false;
+        pidentBool:=false;
+        dotBool := false
+          end
+            else
+            begin
+             Format.fprintf fmt ")";
+        fromPatVar:=false;
+        pidentBool:=false;
+        dotBool := false 
+            end
+        end
+      else
+        Format.fprintf fmt ");\n"
+          
         end
       else if taille_l_exp = 1 then
+      begin
+        (* Format.fprintf fmt ">>>>#####"; *)
         generate_param fmt (List.nth l_exp 0)
+      end
+      
       else 
-      Format.fprintf fmt " )";
+      Format.fprintf fmt ")";
     end
       
     | _ -> Format.fprintf fmt " generate_Texp_apply_1 ";
@@ -929,7 +1032,7 @@ and construct_const fmt ex_lst=
     begin
       match hd.exp_desc with
       | Texp_constant c -> 
-        let x = gen_of_constant c in Format.fprintf fmt "%s " x; 
+        let x = gen_of_constant c in Format.fprintf fmt "%s" x; 
         for i = 0 to (List.length rst)-1 do
           construct_const fmt rst;  
         done
@@ -952,7 +1055,7 @@ and generate_operateur fmt str=
   else if str = "succ" then Format.fprintf fmt "(1) + "
   else if str = "pred" then Format.fprintf fmt "--"
   else if str = "abs" then Format.fprintf fmt " abs  "
-  else Format.fprintf fmt " %s " str
+  else Format.fprintf fmt "%s" str
 
 
 and generate_param fmt param_op =
@@ -961,34 +1064,37 @@ and generate_param fmt param_op =
   | Some b -> begin
     (* ///////////////////////////////////////////////////////////////////// *)
                   match b.exp_desc with
-                  | Texp_apply (exp,l_exp) ->generate_expression fmt b.exp_desc; is_concat := true
-                  | _ ->   generate_expression fmt b.exp_desc
+                  | Texp_apply (exp,l_exp) ->(* Format.fprintf fmt "----" *)generate_expression fmt b.exp_desc; is_concat := true
+                  | Texp_ident (path,long,typ) ->(* Format.fprintf fmt ">>>"; *)pvEnd3 :=true; generate_path fmt path;
+
+
+
+                  | _ ->  generate_expression fmt b.exp_desc
               end
                                        
   | None -> Format.fprintf fmt ""
    
   
-
 (* GENERATE BINDINGS *************************************************************************************************************)
 (* LET X =                                                    ==> (SUSPEND THE $X)
-            LET Y = E                                         ==>  $Y = <E>   
+            LET Y = E                                       ==>  $Y = <E>   
                LET Z = E IN ...                               ==>  $Z = <Z>
                               IN (TEXP_APPLY)                 ==>  [< $X = >]? <(TEXP_APPLY)> *)
 
 
     and gen_let_apply fmt exp l_exp varname=
-(***************************************************** CASE : ( E operator E ) ***************************************)
+(***************************************************** CASE : ( E operator E ) ***************************************************)
   match exp.exp_desc with
   | Texp_ident (path,long,typ) -> begin
     match path with
     | Pdot (t,str,i) ->begin
       if (List.mem str !tab_op)  then 
         begin
-(***************************************************** CASE : LET IDENT = E .. **************************************)
+(***************************************************** CASE : LET IDENT = E .. ***************************************************)
           Format.fprintf fmt "$%s = " varname;
           Format.fprintf fmt " (";generate_param fmt (List.nth l_exp 0);
           generate_operateur fmt str;
-          generate_param fmt (List.nth l_exp 1);Format.fprintf fmt " ); \n \n";
+          generate_param fmt (List.nth l_exp 1);Format.fprintf fmt "); \n \n";
         end
        
       else begin
@@ -1180,7 +1286,7 @@ and generate_value_binding fmt value_binding =
                     match vb_expr.exp_desc with
                     (* LET X = E *)
                     | Texp_construct (long_id,cd,ex_ls) -> Format.fprintf fmt " $%s = " varname; generate_tab fmt vb_expr
-                    | Texp_constant cst -> Format.fprintf fmt "   $%s = %a ;\n" varname  generate_expression vb_expr.exp_desc
+                    | Texp_constant cst -> Format.fprintf fmt "  $%s = %a;\n" varname  generate_expression vb_expr.exp_desc
                     | Texp_ident (path,long,typ) -> generate_path fmt path;  
 (* ERROOR *)
                     (* Format.fprintf fmt "\t /////\n"; *)
@@ -1203,7 +1309,32 @@ and generate_value_binding fmt value_binding =
                         end(* 
                   |Texp_apply (ex,lexp)-> Format.fprintf fmt "apply\n"
                   |Texp_sequence (a,b) -> Format.fprintf fmt "sequence\n" *)
-            | _ -> Format.fprintf fmt "   $%s = %a ;\n" varname  generate_expression vb_expr.exp_desc 
+            
+            | Texp_apply (exp,l_exp) -> 
+
+
+              if(List.length l_exp!=1) then 
+              begin
+                pvEnd:=true;
+
+                fromPatVar:=true;
+                  Format.fprintf fmt "$%s = %a;\n" varname  generate_expression vb_expr.exp_desc;
+                  boolApply:=false;
+                  boolLet:=false;
+                  dotBool:=false;
+                  pidentBool:=false;
+              end
+            else
+              begin
+                pvEnd:=true; 
+                  Format.fprintf fmt "$%s = %a;\n" varname  generate_expression vb_expr.exp_desc;
+                  boolApply:=false;
+                  boolLet:=false;
+              end
+            | _ ->pvEnd:=true; 
+                  Format.fprintf fmt "$%s = %a;\n" varname  generate_expression vb_expr.exp_desc;
+                  boolApply:=false;
+                  boolLet:=false;
                                 end  
                             
   | Tpat_any -> Format.fprintf fmt "generate_value_binding_any \n"
@@ -1226,7 +1357,7 @@ and generate_value_binding fmt value_binding =
       (* Construct of constructs ******************************************** *)
       | Texp_construct (long_id,cd,ex_ls) ->
                         begin
-                          if cd.cstr_name = "[]" then Format.fprintf fmt " " else 
+                          if cd.cstr_name = "[]" then Format.fprintf fmt "" else 
                           begin
                             (* ///////////////////////////////////////////////////////////////////// *)
                             is_prem := true;
@@ -1251,7 +1382,6 @@ and generate_structure_item fmt item =
                                            | Recursive -> 
                                            begin
                                             (* in order to update the list  *)
-                                            l:= [];
                                            
                                            List.iter (generate_value_binding fmt) val_binds ;
                                            end (* Format.fprintf fmt "rec here \n" *)
@@ -1287,6 +1417,7 @@ and generate_structure_item fmt item =
 let generate_from_structure fmt structure =
   let {str_items; str_type; str_final_env} = structure in
 
+  l:= [];
   (* Php header *)
   Format.fprintf fmt "<?php\n\n";
   
