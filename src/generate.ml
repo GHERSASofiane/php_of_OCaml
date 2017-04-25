@@ -12,6 +12,8 @@ type etatVar =
     mutable id : int
   }
 
+let boolMultVars = ref false
+let refVar = ref ""
 let tab_print = ref["print_char";"print_int";"print_float";"print_string";"print_endline";"print_newline"]
 let tab_conv  = ref["int_of_float";"float_of_int";"int_of_char";"char_of_int";"string_of_bool";"bool_of_string";"int_of_string";"float_of_string";"string_of_int";"string_of_float"] 
 let tab_op    = ref["+";"+.";"-";"-.";"*";"*.";"/";"/.";"<";"<=";">";">=";"=";"==";"<>";"!="] 
@@ -473,7 +475,6 @@ and generate_expression fmt exp_desc =
         
         end  
     else begin
-      (* Format.fprintf fmt "IIII"; *)
       generate_predefined_function fmt exp l_exp;
     end 
     
@@ -955,7 +956,6 @@ and generate_predefined_function fmt exp l_exp =
   (* ERROOR *)
     end 
     | Pident ident_t -> begin
-      (* Format.fprintf fmt "???"; *)
 
       let taille_l_exp = (List.length l_exp) in
       Format.fprintf fmt "%s" ident_t.name;
@@ -1064,8 +1064,8 @@ and generate_param fmt param_op =
   | Some b -> begin
     (* ///////////////////////////////////////////////////////////////////// *)
                   match b.exp_desc with
-                  | Texp_apply (exp,l_exp) ->(* Format.fprintf fmt "----" *)generate_expression fmt b.exp_desc; is_concat := true
-                  | Texp_ident (path,long,typ) ->(* Format.fprintf fmt ">>>"; *)pvEnd3 :=true; generate_path fmt path;
+                  | Texp_apply (exp,l_exp) ->generate_expression fmt b.exp_desc; is_concat := true
+                  | Texp_ident (path,long,typ) ->pvEnd3 :=true; generate_path fmt path;
 
 
 
@@ -1091,10 +1091,11 @@ and generate_param fmt param_op =
       if (List.mem str !tab_op)  then 
         begin
 (***************************************************** CASE : LET IDENT = E .. ***************************************************)
-          Format.fprintf fmt "$%s = " varname;
+          Format.fprintf fmt "$%s = " !refVar;
           Format.fprintf fmt " (";generate_param fmt (List.nth l_exp 0);
           generate_operateur fmt str;
           generate_param fmt (List.nth l_exp 1);Format.fprintf fmt "); \n \n";
+          boolMultVars:=false;
         end
        
       else begin
@@ -1220,7 +1221,8 @@ and gen_multiple_let fmt exp loc varname=
        |  Texp_let (rec_flag,val_binds,exp) -> (* ... LET Y= E IN ... *)
                                                List.iter (generate_value_binding fmt) val_binds; 
                                                (* ... IN (THE REST)...*)
-                                               gen_multiple_let fmt exp loc varname
+                                               gen_multiple_let fmt exp loc varname;
+                                               (* Format.fprintf fmt " %s\n" varname *)
        | _ ->
               begin
                     match exp.exp_desc with
@@ -1286,7 +1288,16 @@ and generate_value_binding fmt value_binding =
                     match vb_expr.exp_desc with
                     (* LET X = E *)
                     | Texp_construct (long_id,cd,ex_ls) -> Format.fprintf fmt " $%s = " varname; generate_tab fmt vb_expr
-                    | Texp_constant cst -> Format.fprintf fmt "  $%s = %a;\n" varname  generate_expression vb_expr.exp_desc
+                    | Texp_constant cst -> 
+                    if (varname = !refVar && !boolMultVars) then
+                    begin
+                    refVar:=!refVar ^ "1";
+                  Format.fprintf fmt "  $%s = %a;\n" varname  generate_expression vb_expr.exp_desc  
+                  end
+                  else
+                  begin
+                    Format.fprintf fmt "  $%s = %a;\n" varname  generate_expression vb_expr.exp_desc
+                   end
                     | Texp_ident (path,long,typ) -> generate_path fmt path;  
 (* ERROOR *)
                     (* Format.fprintf fmt "\t /////\n"; *)
@@ -1299,13 +1310,18 @@ and generate_value_binding fmt value_binding =
                     end 
                     | Texp_let (rec_flag,val_binds,exp) -> 
                         begin
-            let strVar =(string_of_int ident.stamp) in
+                          boolMultVars:=true;
+            (* LET X = LET Y = E IN ... *)
+            refVar:=loc.txt; 
+            let varname=loc.txt in  
+            gen_multiple_let fmt vb_expr loc varname;
+
+(* let strVar =(string_of_int ident.stamp) in
             let strt = (String.length strVar)-2 in 
             let nm = String.sub (string_of_int ident.stamp) strt 2 in
             (* LET X = LET Y = E IN ... *) 
-            let varname=loc.txt^nm in
-            (* varTable = varname :: varTable; *)
-            gen_multiple_let fmt vb_expr loc varname;  
+            let varname=loc.txt^nm in  
+            gen_multiple_let fmt vb_expr loc varname; *)            
                         end(* 
                   |Texp_apply (ex,lexp)-> Format.fprintf fmt "apply\n"
                   |Texp_sequence (a,b) -> Format.fprintf fmt "sequence\n" *)
@@ -1331,6 +1347,8 @@ and generate_value_binding fmt value_binding =
                   boolApply:=false;
                   boolLet:=false;
               end
+
+
             | _ ->pvEnd:=true; 
                   Format.fprintf fmt "$%s = %a;\n" varname  generate_expression vb_expr.exp_desc;
                   boolApply:=false;

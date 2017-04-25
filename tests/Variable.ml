@@ -1,5 +1,9 @@
+let x = let y=5 in let a=(7*2) in let z=1 in y+a+z;;
+(* let x = let y = 5 in let x = 10 in let p = 20 in let x=9 in p+x-y*2 ;; *)
 
+let x =let y = 5 and o = 10 and p = 20 in p+o-y*2 ;;
 
+let res = (2*5) in res +2;;
 
 let x = let y = 5 in let z = 10 in let p = 20 in p+z + y ;;
 
