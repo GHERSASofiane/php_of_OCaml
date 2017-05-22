@@ -1,3 +1,5 @@
+let add x y = let z = x + y in z;;
+
 
 let x = [88] in
 match x with

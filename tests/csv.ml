@@ -1,6 +1,6 @@
 open Printf
 type user = { 
-            id: int;
+           mutable id: int;
            mutable nom: string; 
            mutable date_naissance: string;
            mutable mail: string;
@@ -8,42 +8,9 @@ type user = {
             }
 
 (************************************************************************************************************)
-(**********************************************    pour le test   *******************************************)
+(******************************************    fonction utile    *************************************)
 (************************************************************************************************************)
 
-let usr1 = { 
-            id = 1 ;
-            nom = "ghersa"; 
-            date_naissance = "01/04/1993";
-            mail = "m.ghersa.s@gmail.com";
-            telephone = "000  000 000 000";
-            }
-
-let usr2 = { 
-            id = 2 ;
-            nom = "kasdi"; 
-            date_naissance = "01/03/1994";
-            mail = "m.kasdi.h@gmail.com";
-            telephone = "111 111 111 111";
-            }
-
-let usr3 = { 
-            id = 3 ;
-            nom = "toto"; 
-            date_naissance = "00/11/2016";
-            mail = "toto.tata@gmail.com";
-            telephone = "333 333 333 333";
-            }
-
-(************************************************************************************************************)
-(******************************************    fonction et variable util     ********************************)
-(************************************************************************************************************)
-let s = ref ""
-let sNew = ref ""
-let buf = ref []
-let list_users = ref []
-
-(* pour remplacer la fonction split *)
 let split chaine separateur =
   let result = ref [] in
   begin
@@ -85,156 +52,64 @@ let lire_file file =
   !result
 
 
-
 (************************************************************************************************************)
+(******************************************    fonction pour L'ajout    *************************************)
 (************************************************************************************************************)
-                          (**********   fonction de création d'un user   **********)
-(************************************************************************************************************)
-(* pour remplacer la fonction split *)
-let split chaine separateur =
-  let result = ref [] in
-  begin
-        let ch = ref "" in 
-        for i = 0 to String.length chaine - 1 do
-               begin
-                  if chaine.[i] = separateur then 
-                  begin
-                      result :=  !ch :: !result; ch := ""
-                  end
-                  else 
-                      ch := !ch^(String.make 1 chaine.[i])
-               end
-        
-        done;
-        result :=  !ch :: !result;
-  end;
-  !result
-    
-
-let rec generate_str lst =
-  match lst with
-  | []  -> () 
-  | hd::rst ->begin
-                      for i = (List.length hd)-1 downto 0 do
-                              if(i = 0) then
-                                s:= !s ^ (List.nth hd i)^"\n"
-                              else
-                                s:= !s ^ (List.nth hd i)^";" 
-                      done;                                                    
-                      buf:= !s::!buf;
-                      s:= ""; 
-                      generate_str rst;
-              end  
-
- 
-let add tab = 
-  begin
-    for i = 0 to (List.length tab)-1 do
-
-      if(i=(List.length tab)-1)then
-                 sNew:= !sNew ^ (List.nth tab i)^"\n"
-             else
-              sNew:= !sNew ^ (List.nth tab i)^";"
-    done;
-  end
-
 
 let write usr =
   let id = (string_of_int (usr.id)) in
   let file = "Inscription.csv" in 
-  let list_ligne = lire_file file in
-  let l = ref list_ligne in generate_str !l ;
-  
-  let x = usr.telephone^";"^usr.mail^";"^usr.date_naissance^";"^usr.nom^";"^id in
+   let x = id^";"^usr.nom^";"^usr.date_naissance^";"^usr.mail^";"^usr.telephone^"\n" in
+    let flag_list = [Open_append] in
+      let sortie = open_out_gen flag_list 755 file in
+         output_string sortie x;
+         close_out sortie 
 
-  let u = (split x ';' )  in add (u);
+
+(************************************************************************************************************)
+(******************************************    fonction pour supprimer    ***********************************)
+(************************************************************************************************************)
 
 
-  buf:= !sNew::!buf ;
-
+ let clean file =
   let out_chanel = open_out file in 
-        for i = 0 to List.length !buf -1 do
-          output_string out_chanel (List.nth !buf i);
-        done;
-         buf:=[] ;
-  close_out out_chanel
+      output_string out_chanel "";
+      close_out out_chanel
 
 
 
-
-(************************************************************************************************************)
-(************************************************************************************************************)
-                  (**********   fonction de suppression d'un user par id  **********)
-(************************************************************************************************************)
-
-let rec generate_dlt lst id =
-  match lst with
-  | []  ->  s:= !s ^"" 
-  | hd::rst ->begin 
-                      for i = (List.length hd)-1 downto 0 do
-                      begin
-                        if (List.nth hd 4) = id  then  ()
-                              else 
-                              begin
-                                
-                                  if (i = 0) then
-                                      s:= !s ^ (List.nth hd i)^"\n"
-                                  else
-                                      s:= !s ^ (List.nth hd i)^";"  
-                              end 
-                      end
-                                   
-                             
-                      done;                                                    
-                      buf:= !s::!buf;
-                      s:= ""; 
-                      generate_dlt rst id;
-              end
-
-
-let delete id = 
-  let id_usr = (string_of_int id) in
+  let delete id =
   let file = "Inscription.csv" in 
-  let list_ligne = lire_file file in
-  let l = ref list_ligne in generate_dlt !l id_usr;
-buf:= !sNew::!buf ;
-
-  let out_chanel = open_out file in 
-        for i = List.length !buf -1 downto 0 do
-          output_string out_chanel (List.nth !buf i);
-        done;
-      buf:=[] ; 
-  close_out out_chanel
-
-
+  let id = string_of_int id in
+    let list_ligne = lire_file file in
+    let l = ref list_ligne in
+    clean file;
+      for i = 0 to List.length !l -1 do
+      begin 
+            let subList = (List.nth !l i) in
+            if((List.nth subList 4) <> id) then
+                begin
+                  let usr_search = ref { 
+                                id = int_of_string (List.nth subList 4) ;
+                                nom = (List.nth subList 3); 
+                                date_naissance = (List.nth subList 2);
+                                mail = (List.nth subList 1);
+                                telephone = (List.nth subList 0);
+                                } in
+                 write (!usr_search)
+                end
+          else ()
+           
+      end
+    done
 
 (************************************************************************************************************)
+(******************************************    fonction pour la recherche     *******************************)
 (************************************************************************************************************)
-                  (**********   fonction de recherche d'un user par id  **********)
-(************************************************************************************************************)
-
-let rec generate_search tab id usr_search =
-  match tab with
-                | []  ->  () 
-                | hd::rst ->begin 
-                          if (List.nth hd 4) = id then 
-                          begin
-                            !usr_search.nom <- (List.nth hd 3);
-                            !usr_search.date_naissance <- (List.nth hd 2);
-                            !usr_search.mail <- (List.nth hd 1);
-                            !usr_search.telephone <- (List.nth hd 0)
-                                          
-                          end
-                          else 
-                          begin
-                              generate_search rst id usr_search
-                          end 
-
-                    end
 
 let search  id_usr = 
      let usr_search = ref { 
-                        id = id_usr ;
+                        id = -1 ;
                         nom = ""; 
                         date_naissance = "";
                         mail = "";
@@ -243,79 +118,44 @@ let search  id_usr =
     let id = (string_of_int (id_usr)) in
     let file = "Inscription.csv" in 
     let list_ligne = lire_file file in
-    let l = ref list_ligne in generate_search !l id usr_search;
-    !usr_search
-  
-
-
+    let l = ref list_ligne in
+      for i = 0 to List.length !l -1 do
+      begin
+        let subList=(List.nth !l i) in
+        if((List.nth subList 4) = id) then
+        begin
+            !usr_search.id <- id_usr;
+            !usr_search.nom <- (List.nth subList 3);
+            !usr_search.date_naissance <- (List.nth subList 2);
+            !usr_search.mail <- (List.nth subList 1);
+            !usr_search.telephone <- (List.nth subList 0)
+            
+        end
+      end
+        
+      done;
+  !usr_search 
 
 (************************************************************************************************************)
+(******************************************    fonction pour récupérer l'ensemble des users   ***************)
 (************************************************************************************************************)
-                  (**********   fonction de lister tous les users   **********)
-(************************************************************************************************************)
 
-
-
- let rec generate_lst lst =
-  match lst with
-  | []  ->  () 
-  | hd::rst ->begin
-        let tmp = { 
-            id = int_of_string (List.nth hd 4) ;
-            nom = (List.nth hd 3); 
-            date_naissance = (List.nth hd 2);
-            mail = (List.nth hd 1);
-            telephone = (List.nth hd 0);
-            } in                                             
-                      list_users:= tmp::!list_users;
-                      generate_lst rst;
-              end
-
-let list () = 
+let get_list () = 
+  let list_users = ref [] in 
   let file = "Inscription.csv" in 
   let list_ligne = lire_file file in
-  let l = ref list_ligne in generate_lst !l ;
+  let l = ref list_ligne in 
+  for i = 0 to List.length !l -1 do
+  begin
+    let usr_search = ref { 
+                                id = int_of_string (List.nth (List.nth !l i) 4) ;
+                                nom = (List.nth (List.nth !l i) 3); 
+                                date_naissance = (List.nth (List.nth !l i) 2);
+                                mail = (List.nth (List.nth !l i) 1);
+                                telephone = (List.nth (List.nth !l i) 0);
+                                } in
+    list_users := usr_search  :: !list_users ;
+  end
+  done;
   !list_users
   
-  
-
-
-(************************************************************************************************************)
-(************************************************************************************************************)
-                  (**********   jeux de test des différent main    **********)
-(************************************************************************************************************)
-
-(* add user 1 *) 
-(* let _ =   write usr1;;   *)
-
-(* add user 2 *) 
-(* let _ =   write usr2;; *)
-
-(* add user 3 *) 
-(* let _ =   write usr3;; *)
-
-(* List users *) 
- (*  let _ = let t = list() in 
- for i = 0 to (List.length t)-1 do
-    print_string "Le nom de l'element ";
-    print_int i;
-    print_string " est : ";
-   print_endline (List.nth t i).nom
- done;;  *)
-
-
-(* let _ = 
-  let tab = split "kasdi;hacene;ghersa;sofiane" ';' in 
-  print_string " nombre d'element dans le tableau est : "; print_int (List.length tab) ; print_endline ""
- ;; *)
-
-(* delete user 2 *) 
-(* let _ =   delete 1 ;;  *)
-
-(* search user " id = 3 " *) 
-(* let _ = 
-      print_string "Id :"; print_int (search 1).id;print_endline "" ;
-      print_string "Nom :"; print_endline (search 1).nom;
-      print_string "date_naissance :"; print_endline (search 1).date_naissance;
-      print_string "mail :"; print_endline (search 1).mail;
-      print_string "telephone :"; print_endline (search 1).telephone ;;  *)
