@@ -39,14 +39,13 @@ let lire_file file =
             let nb_champs = (List.length !ligne) in
             while true do
                       if (List.length !ligne) != nb_champs then
-                          print_endline "Erreur de lecture"  
+                         raise End_of_file 
                       else
                           result := List.append !result [ !ligne ];
                           ligne := (split (input_line entree) ';' ) 
                       done
         with
           | End_of_file -> close_in entree 
-          (* fclose($file); *)
   end;
   
   !result
@@ -63,15 +62,14 @@ let buffer_file file =
             while true do
                       if !ligne != "" then 
                       begin
-                          result := !result ^ !ligne ^ "\n";
+                          result := !result ^ !ligne ;
                           ligne :=  (input_line entree) 
                       end
                     else raise Exit
                       done
         with
           | End_of_file -> close_in entree 
-          | Exit -> print_endline "nnn"
-          (* fclose($file); *)
+          | Exit -> print_endline "Fin"
   end;
   !result
 
@@ -83,6 +81,18 @@ let write usr =
   let id = (string_of_int (usr.id)) in
   let file = "Inscription.csv" in 
    let x = id^";"^usr.nom^";"^usr.date_naissance^";"^usr.mail^";"^usr.telephone^"\n" in
+     let buff = ref (buffer_file file) in 
+      let out_chanel = open_out file in 
+          buff := !buff^x;
+          output_string out_chanel !buff;
+          close_out out_chanel
+        
+
+ 
+let write_for_delete usr =
+  let id = (string_of_int (usr.id)) in
+  let file = "Inscription.csv" in 
+   let x = id^";"^usr.nom^";"^usr.date_naissance^";"^usr.mail^";"^usr.telephone in
      let buff = ref (buffer_file file) in 
       let out_chanel = open_out file in 
           buff := !buff^x;
@@ -122,7 +132,7 @@ let write usr =
                                 mail = (List.nth subList 1);
                                 telephone = (List.nth subList 0);
                                 } in
-                 write (!usr_search)
+                 write_for_delete (!usr_search)
                 end
           else ()
            
@@ -184,49 +194,3 @@ let get_list () =
   end
   done;
   !list_users
-
-(* let sortie = open_out_gen [Open_append] 755 file in
-         output_string sortie x;
-         close_out sortie  *)
-(* let usr1 = { 
-            id = 111 ;
-            nom = "ghersa"; 
-            date_naissance = "01/04/1993";
-            mail = "m.ghersa.s@gmail.com";
-            telephone = "000  000 000 000";
-            }
-  let _ = write usr1 ;; *)
-
-(* 
-let _ = delete 1;;
- *)
-(* let _ = clean "Inscription.csv" ;;
- *)
-(* let _ = let result = search 3  in
-        print_endline (result.nom);;
- *)
-
-  (* let _ = let result = get_list ()  in
-        print_int (List.length result);;
- *)
-(* 
-let _ = let   usrr = {
-            id = 400;
-           nom = "gher"; 
-            date_naissance = "11/55/8888";
-            mail = "gggggggggg";
-            telephone = "221110201";
-            }
-
-
-   in write usrr;;
- *)
-
-(* let _ = let result = split "ghersa;sofiane;kasdi" ';' in
-        print_int (List.length result);;
- *)
-(* 
-let _ = let result = lire_file "Inscription.csv"  in
-        print_int (List.length result);;
-
-       *)  

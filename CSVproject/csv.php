@@ -33,9 +33,8 @@
 	while (true  )
  	 {
  	 		if ( (sizeof(($ligne))!=$nb_champs) ) {
- echo   ( "Erreur de lecture"." \n " ); 
-
- }
+  throw new ParseError("End_of_file");
+ 	 	 }
 	else{
  array_unshift(($result),($ligne)) ;
  }
@@ -62,11 +61,12 @@
 	while (true  )
  	 {
  	 		if ( (($ligne)!="") ) {
-  ( $result = (($result).(($ligne)."\n") )  );
+  ( $result = (($result).($ligne))  );
   ( $ligne = fgets($entree) );
  
  }	else{
-  throw new ErrorException ("EXIT");
+  throw new ErrorException("Exit");
+ 	 	 }
 
  	 }
 
@@ -99,6 +99,20 @@ fclose($out_chanel);
 
 
 
+	 function write_for_delete  (  $usr ){
+  	 $id =strval($usr['id']); 
+	$file = "Inscription.csv";
+	$x = ($id.(";".($usr['nom'].(";".($usr['date_naissance'].(";".($usr['mail'].(";".$usr['telephone']) ) ) ) ) ) ) ) ;
+	 $buff =	buffer_file($file); 
+	 $out_chanel =fopen($file , "w" ); 
+ ( $buff = (($buff).$x)  );
+ 
+fputs($out_chanel,($buff));
+fclose($out_chanel);
+ }
+
+
+
 	 function clean  (  $file ){
   	 $out_chanel =fopen($file , "w" ); 
 
@@ -113,7 +127,8 @@ fclose($out_chanel);
 	 $id =strval($id); 
 	 $list_ligne =	lire_file($file); 
 	 $l =($list_ligne); 
-	clean($file)	for ($i=0; $i <= (sizeof(($l))-1); $i++) 
+	clean($file);
+	for ($i=0; $i <= (sizeof(($l))-1); $i++) 
  	 { 
  	 		$subList = ($l)[$i];
 	if ( ($subList[4]<>$id) ) {
@@ -125,9 +140,10 @@ fclose($out_chanel);
  	 	 'mail' => $subList[1],
  	 	 'telephone' => $subList[0]
   	] ; 
-	write(($usr_search))
+	write_for_delete(($usr_search));
+
  }	else{
-  return ();
+ 
  }
 
 	 }

@@ -1,7 +1,6 @@
 <html>
    <head>
-   	   <LINK rel="stylesheet" type="text/css" href="Style/style.css">
-        <style>
+   	<style>
 table {
     border-collapse: collapse;
     width: 100%;
@@ -31,11 +30,12 @@ th {
     cursor: pointer;
 }
 </style>
-       <title>Home</title>
+   	   <LINK rel="stylesheet" type="text/css" href="Style/style.css">
+       <title>Listing</title>
    </head>
 <body> 
 
-
+<?php   include "csv.php";  ?>
 
 <ul>
   <li><a href="Index.php">Home</a></li>
@@ -43,7 +43,6 @@ th {
   <li><a href="Listing.php">Listing</a></li>
   <li><a href="Search.php">Search</a></li>
 </ul>
-
 
 <h2>Liste des utilisateurs</h2>
 
@@ -54,9 +53,10 @@ th {
     <th>Date De Naissance </th>
     <th>Mail</th>
     <th>Téléphone </th>
+    <th> Supprimer </th>
   </tr>
   <?php 
-      include "csv.php";
+
      $result = get_list  (  );
      for ($i=0; $i <= (sizeof($result)-1) ; $i++) { 
   ?>
@@ -66,66 +66,15 @@ th {
       <td> <?php echo $result[$i]["date_naissance"]; ?> </td>
       <td> <?php echo $result[$i]["mail"]; ?> </td>
       <td> <?php echo $result[$i]["telephone"]; ?> </td>
+      <td>  <a href="Remove.php?id=<?php echo $result[$i]["id"]; ?>" class="button">Remove</a>     </td>
     </tr>
 
   <?php  
      }
   ?> 
 
-
-
-<?php
- // include "csv.php";
- // $file = "Inscription.csv";
-
-
- // $usr =[ 
-	//  	 'id' => 250,
- // 	 	 'nom' => "kasdi",
- // 	 	 'date_naissance' => "01/03/1994",
- // 	 	 'mail' => "m.kasdi.h@gmail.com",
- // 	 	 'telephone' => "012 345 678 999"
- //  	];
-
-
-
-                      // Test split
- // $result = split  (  "ghersa;kasdi;hacene;sofiane" , ';' );
- //  print_r  ($result) ;
-
-
- //                   //  Test lire_file
-
-
-
- // $result = buffer_file(  $file );
- // echo  ($result) ;
-
- // $result = lire_file(  $file );
- // print_r  ($result) ;
-
-
-                     //  Test write
- // write(  $usr );
-
-                     //  Test clean
-// clean  ( $file );
-
-// delete  (  20 );
-
-
-                     //  Test search
-// $result = search  (20);
-// print_r  ($result) ;
-
-
-                     //  Test get_list
-// $result = get_list  (  );
-// echo "Nombre de Enreg :: ".(sizeof($result))."<br>";
-// print_r  ($result) ;
-
-
-?>
+ 
+</table>
 
 </body>
 

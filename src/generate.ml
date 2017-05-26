@@ -33,6 +33,7 @@ let pvEnd3 = ref false
 let boolApply = ref false
 let boolLet = ref false
 
+let noise = ref false
 let alterP = ref false
 let alterP2 = ref false
 let dotBool = ref false
@@ -233,9 +234,29 @@ and generate_expression fmt exp_desc =
 
                                                       | Texp_ident (path,long,typ) -> begin
                                                         match path with
-                                                        | Pdot (t,str,i) ->
+                                                        | Pdot (t,str,valds) ->
                                                         if(str = "raise") then 
-                                                                Format.fprintf fmt " throw new ErrorException (\"EXIT\");\n"
+                                                        begin
+                                                                
+                                                                let (lab,exp2,jj) = (List.nth l_exp 0) in 
+                                                                match exp2 with
+
+                                                                | Some aa -> begin
+                                                                          match aa.exp_desc with
+                                                                          | Texp_construct (loc,cdes,exp) -> begin
+                                                                            if(cdes.cstr_name = "End_of_file") then 
+                                                                            Format.fprintf fmt " throw new ParseError(\"%s\");\n \t \t }\n" cdes.cstr_name
+                                                                          else
+                                                                          if (cdes.cstr_name = "Exit") then 
+                                                                            Format.fprintf fmt " throw new ErrorException(\"%s\");\n \t \t }\n" cdes.cstr_name
+                                                                          else 
+                                                                          Format.fprintf fmt " throw new Exception(\"%s\");\n \t \t }\n" cdes.cstr_name
+                                                                          end
+                                                                          | _ -> Format.fprintf fmt " ____IF____EXCEPTION_____"
+                                                                            end
+                                                                | None -> Format.fprintf fmt "___ NONE ___"
+                                                          
+                                                        end
                                                               else
                                                          if (List.mem str !tab_print) 
                                                           then begin 
@@ -293,8 +314,17 @@ and generate_expression fmt exp_desc =
                                            Format.fprintf fmt   ";\n }\n\n" 
                     | Texp_ident (path,long,typ)    ->  Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
                                            Format.fprintf fmt   ";\n }\n\n" 
-                    | Texp_construct (long_id,cd,exp_list) ->  Format.fprintf fmt " return "; generate_expression fmt z.exp_desc ; 
-                                           Format.fprintf fmt   ";\n }\n\n" 
+                    | Texp_construct (long_id,cd,exp_list) -> 
+                              begin
+                                  let vv = cd.cstr_name in 
+                                    if vv = "()" then
+                                    Format.fprintf fmt   "\n }\n\n" 
+                                     else begin
+                                       
+                                    Format.fprintf fmt " return %s " vv ; generate_expression fmt z.exp_desc ; 
+                                    Format.fprintf fmt   ";\n }\n\n" 
+                                     end
+                              end 
                     | Texp_apply (exp,l_exp) -> begin
                       let tab_op= ["+";"+.";"-";"-.";"*";"*.";"/";"/.";"<";"<=";">";">=";"=";"==";"<>";"!="] in
                             match exp.exp_desc with
@@ -302,7 +332,26 @@ and generate_expression fmt exp_desc =
                               match path with
                               | Pdot (t,str,i) -> 
                               if(str = "raise") then 
-                              Format.fprintf fmt " throw new ErrorException (\"EXIT\");\n"
+                                                        begin
+                                                                let (lab,exp2,jj) = (List.nth l_exp 0) in 
+                                                                match exp2 with
+
+                                                                | Some aa -> begin
+                                                                          match aa.exp_desc with
+                                                                          | Texp_construct (loc,cdes,exp) -> begin
+                                                                            if(cdes.cstr_name = "End_of_file") then 
+                                                                            Format.fprintf fmt " throw new ParseError(\"%s\");\n \t \t }\n" cdes.cstr_name
+                                                                          else
+                                                                          if (cdes.cstr_name = "Exit") then 
+                                                                            Format.fprintf fmt " throw new ErrorException(\"%s\");\n \t \t }\n" cdes.cstr_name
+                                                                          else 
+                                                                          Format.fprintf fmt " throw new Exception(\"%s\");\n \t \t }\n" cdes.cstr_name
+                                                                          end
+                                                                          | _ -> Format.fprintf fmt " ____IF____EXCEPTION_____"
+                                                                            end
+                                                                | None -> Format.fprintf fmt "___ NONE ___"
+                                                          
+                                                        end
                               else
                               if (List.mem str !tab_print) 
                                 then begin
@@ -356,6 +405,7 @@ and generate_expression fmt exp_desc =
  
    if (List.length l_exp) = 1 then 
       begin 
+
         match exp.exp_desc with
         | Texp_ident (path,long,typ) -> begin
           match path with
@@ -377,7 +427,6 @@ and generate_expression fmt exp_desc =
             else begin  (* uniry operator *)
 
               (* MATCH ALWAYS WITH TEXP_IDENT AND ANYTHING *)
-
               generate_expression fmt exp.exp_desc;
               (* Format.fprintf fmt "\n \t \t +++++ \n \n"; *)
              
@@ -462,7 +511,11 @@ and generate_expression fmt exp_desc =
                                                                                                                             else
                                                                                                                             begin
                                                                                                                             	if (!alterP2) then
+                                                                                                                              begin
+                                                                                                                                if(!pvEnd3) then
                                                                                                                               Format.fprintf fmt ")"
+                                                                                                                            else Format.fprintf fmt ");\n"
+                                                                                                                              end
                                                                                                                           else Format.fprintf fmt ")"
                                                                                                                             end
 
@@ -485,6 +538,7 @@ and generate_expression fmt exp_desc =
           | _ -> begin
 
           (* CALL REC FUNCTIONS *)
+
             generate_expression fmt exp.exp_desc;
             boolApply:=true;
             pvEnd2:=true;
@@ -710,36 +764,14 @@ and generate_expression fmt exp_desc =
                                                                      Format.fprintf fmt "(sizeof(";
                                                                       generate_expression fmt a.exp_desc;
                                                                      Format.fprintf fmt ") >= %d) {"  (!temp-1);
-                                                                     if(!exp_tpe) then 
-                                          begin
-                                          Format.fprintf fmt  "\n \t \t$hd= ";
-                                          generate_expression fmt a.exp_desc;
-                                          Format.fprintf fmt  "[0];";
-
-                                          Format.fprintf fmt  "\n \t \t";
-                                          generate_expression fmt a.exp_desc; 
-                                          Format.fprintf fmt  " = array_splice(";
-                                          generate_expression fmt a.exp_desc;
-                                          Format.fprintf fmt  ",1);\n";
-                                          end
+                                                                    
                                                                      end
                                                                    else 
                                                                    begin
                                                                       Format.fprintf fmt "(sizeof(";
                                                                       generate_expression fmt a.exp_desc;
                                                                      Format.fprintf fmt ") == %d) {"  (!temp);
-                                                                     if(!exp_tpe) then 
-                                          begin
-                                          Format.fprintf fmt  "\n \t \t$hd= ";
-                                          generate_expression fmt a.exp_desc;
-                                          Format.fprintf fmt  "[0];";
-
-                                          Format.fprintf fmt  "\n \t \t";
-                                          generate_expression fmt a.exp_desc; 
-                                          Format.fprintf fmt  " = array_splice(";
-                                          generate_expression fmt a.exp_desc;
-                                          Format.fprintf fmt  ",1);\n";
-                                          end
+                                                                     
                                                                      end
                                                                       end;
 
@@ -747,18 +779,7 @@ and generate_expression fmt exp_desc =
                                                                         
                                                                       generate_expression fmt (List.nth b i).c_rhs.exp_desc;
                                                                       Format.fprintf fmt "\n \t }else{";
-                                                                      if(!exp_tpe) then 
-                                          begin
-                                          Format.fprintf fmt  "\n \t \t$hd= ";
-                                          generate_expression fmt a.exp_desc;
-                                          Format.fprintf fmt  "[0];";
-
-                                          Format.fprintf fmt  "\n \t \t";
-                                          generate_expression fmt a.exp_desc; 
-                                          Format.fprintf fmt  " = array_splice(";
-                                          generate_expression fmt a.exp_desc;
-                                          Format.fprintf fmt  ",1);\n";
-                                          end
+                                                                     
                             | _-> Format.fprintf fmt "OO********";
                             
                             done;
@@ -967,7 +988,10 @@ and generate_path fmt path =
               	(* if () then 
               	begin *)
                 alterP2:=true;
-          Format.fprintf fmt "($%s)" varname;
+                if(!pvEnd2 & (not !noise)) then 
+          Format.fprintf fmt "($%s);\n" varname
+        else
+         Format.fprintf fmt "($%s)" varname;
           pvEnd3:=false; pvEnd2:=false; pvEnd:=false;
           boolLet:=false;boolApply:=false;
               	(* end
@@ -1015,7 +1039,6 @@ and generate_path fmt path =
 
 (* ===================================================================== *)
 and generate_predefined_function fmt exp l_exp =
-  
   match exp.exp_desc with
   | Texp_ident (path,long,typ) -> begin
     match path with
@@ -1302,7 +1325,7 @@ and generate_param fmt param_op =
   | Some b -> begin
     (* ///////////////////////////////////////////////////////////////////// *)
                   match b.exp_desc with
-                  | Texp_apply (exp,l_exp) -> generate_expression fmt b.exp_desc; is_concat := true
+                  | Texp_apply (exp,l_exp) -> noise:= true; generate_expression fmt b.exp_desc; is_concat := true;noise:= false;
                   | Texp_ident (path,long,typ) ->pvEnd3 :=true; generate_path fmt path;
 
 
